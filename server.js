@@ -6,7 +6,8 @@ const jwt = require('jsonwebtoken');
 const path = require('path'); // HTML ගොනු serve කිරීමට අවශ්‍යයි
 
 const app = express();
-const PORT = 3000;
+// Replit හි host කිරීමට මෙම වෙනස අවශ්‍යයි
+const PORT = process.env.PORT || 3000; 
 const JWT_SECRET = 'your-very-strong-secret-key-12345';
 const OWNER_ACCOUNT_NAME = "Danidu Official"; // අයිතිකරුගේ ගිණුමේ නම
 
@@ -19,7 +20,15 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // --- Database Connection (MongoDB Atlas) ---
-const atlasConnectionString = 'mongodb+srv://Danidu_Official:DD%40999Admin@cluster0.gakhyma.mongodb.net/ddGamesMoney?appName=Cluster0';
+// Replit හි host කිරීමට, මෙම connection string එක "Secrets" (Environment Variables) එකකට දමන්න
+// const atlasConnectionString = 'mongodb+srv://Danidu_Official:DD%40999Admin@cluster0.gakhyma.mongodb.net/ddGamesMoney?appName=Cluster0';
+
+// Replit Secrets (Environment Variables) වෙතින් connection string එක ලබා ගැනීම
+const atlasConnectionString = process.env.atlasConnectionString;
+
+// Replit Secrets වෙතින් JWT Secret එක ලබා ගැනීම
+const effectiveJwtSecret = process.env.JWT_SECRET || JWT_SECRET;
+
 
 mongoose.connect(atlasConnectionString)
     .then(() => console.log('MongoDB Atlas connected...'))
@@ -116,7 +125,7 @@ app.post('/api/login', async (req, res) => {
         }
         const token = jwt.sign(
             { id: user._id, accountName: user.accountName },
-            JWT_SECRET,
+            effectiveJwtSecret, // Replit Secret එක භාවිතා කිරීම
             { expiresIn: '1d' }
         );
         res.status(200).json({
@@ -134,7 +143,7 @@ const protect = (req, res, next) => {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, JWT_SECRET);
+            const decoded = jwt.verify(token, effectiveJwtSecret); // Replit Secret එක භාවිතා කිරීම
             req.user = decoded; 
             next();
         } catch (error) {
@@ -286,7 +295,6 @@ app.post('/api/fight-bet', protect, async (req, res) => {
 
         if (won) {
             // දිනුවොත්: Bet එක මෙන් දෙගුණයක් (Player's bet + Opponent's bet) දිනයි
-            // Player ගේ Balance එකෙන් Bet එක අඩු කර, Bet එක මෙන් දෙගුණයක් එකතු කරයි
             // Net result: Balance + bet
             newBalance = user.balance + bet;
             message = `You Won! You received LKR ${bet * 2} (your ${bet} + opponent's ${bet}).`;
@@ -308,7 +316,6 @@ app.post('/api/fight-bet', protect, async (req, res) => {
                 { accountName: OWNER_ACCOUNT_NAME },
                 { $inc: { balance: commission } }
             );
-            // (මෙහිදී '0704966651' අංකයට reload කරනවා වෙනුවට, Owner ගේ game balance එකට එකතු කිරීම වඩාත් පහසුයි)
         }
 
         res.status(200).json({
@@ -322,7 +329,7 @@ app.post('/api/fight-bet', protect, async (req, res) => {
     }
 });
 
-// --- (අලුත්) API Endpoint for WITHDRAWAL ---
+// --- API Endpoint for WITHDRAWAL ---
 app.post('/api/withdraw', protect, async (req, res) => {
     try {
         const { phoneNumber } = req.body;
@@ -374,5 +381,5 @@ app.post('/api/withdraw', protect, async (req, res) => {
 // --- Start the server ---
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Website available at: http://localhost:${PORT}/register.html`);
+    // Replit.com හිදී, public URL එක ස්වයංක්‍රීයව පෙන්වයි
 });
