@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,63 +7,71 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #121212;
             color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            /* --- (අලුත්) Background Image Styles --- */
+            /* Background Image */
             background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            /* --- --- */
         }
         .container {
-            /* --- (වෙනස් කළා) Semi-Transparent Background --- */
-            background-color: rgba(30, 30, 30, 0.9);
+            background-color: rgba(30, 30, 30, 0.9); /* Semi-transparent background */
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            width: 450px;
+            width: 90vw;
+            max-width: 600px; /* Game එකට වැඩි ඉඩක් */
             text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .container h1 { margin-top: 0; color: #ffc107; }
-
-        #game-area {
-            /* --- (වෙනස් කළා) Semi-Transparent Background --- */
-            background-color: rgba(42, 42, 42, 0.9);
-            padding: 1.5rem;
-            border-radius: 8px;
+        .container h1 {
+            margin-top: 0;
+            color: #ffc107;
+        }
+        
+        /* Game styles */
+        #game-container {
+            width: 100%;
+            height: 400px; /* Game Canvas එකේ උස */
+            background-color: #000;
             margin-top: 1rem;
-            display: none; 
+            border-radius: 8px;
+            overflow: hidden;
+            display: none; /* --- මුලින් සඟවා තබයි --- */
+            position: relative; /* Score එක උඩින් පෙන්වීමට */
         }
-        #coin-button {
-            font-size: 4rem;
-            cursor: pointer;
-            transition: transform 0.1s;
-            user-select: none; 
-        }
-        #coin-button:active {
-            transform: scale(0.9);
+        #game-canvas {
+            width: 100%;
+            height: 100%;
         }
         #score-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
             font-size: 1.5rem;
             font-weight: bold;
             color: #ffc107;
+            background-color: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
         }
 
         .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin: 0.5rem; }
         .btn:hover { background-color: #0069d9; }
         .btn-nav { background-color: #6c757d; }
         .btn-nav:hover { background-color: #5a6268; }
-
-        #message { margin-top: 1rem; font-size: 0.9rem; min-height: 20px; }
+        
+        #message { margin-top: 1rem; font-size: 1.1rem; font-weight: bold; min-height: 20px; }
         .success { color: #4CAF50; }
         .error { color: #f44336; }
     </style>
+    <!-- Three.js Library එක load කිරීම -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -76,10 +84,9 @@
         <div id="message"></div>
 
         <!-- The Actual Game Area -->
-        <div id="game-area">
-            <h3>Collect 1000 Coins!</h3>
-            <div id="coin-button">💰</div>
-            <p>Score: <span id="score-display">0</span></p>
+        <div id="game-container">
+            <canvas id="game-canvas"></canvas>
+            <div id="score-display">Score: 0</div>
         </div>
     </div>
 
@@ -92,40 +99,49 @@
         
         const messageEl = document.getElementById('message');
         const ticketCountEl = document.getElementById('ticket-count');
-        const gameAreaEl = document.getElementById('game-area');
-        const scoreDisplayEl = document.getElementById('score-display');
-        const coinButtonEl = document.getElementById('coin-button');
+        const gameContainerEl = document.getElementById('game-container');
+        const scoreDisplayEl = document.getElementById('score-display').firstChild;
         const playGameBtn = document.getElementById('play-game-btn');
+        const walletBtn = document.getElementById('wallet-btn');
 
         let currentGameScore = 0;
-        let hasWonTickets = false; 
+        let hasWonTickets = false;
+        let isGameOver = false;
 
+        // --- 1. පිටුව load වූ සැණින් Ticket ගණන ගෙන්වා ගැනීම ---
         window.addEventListener('DOMContentLoaded', async () => {
             if (!token) { window.location.href = '/login.html'; return; }
             
             try {
-                // (නිවැරදි කළ path)
-                const response = await fetch('/api/user-data', { method: 'GET', headers: authHeaders });
+                const response = await fetch('/api/user-data', {
+                    method: 'GET', headers: authHeaders
+                });
                 if (response.ok) {
                     const data = await response.json();
                     ticketCountEl.textContent = data.tickets;
                 } else {
                     localStorage.removeItem('ddUserToken');
-                    window.location.href = '/login.html'; // (නිවැරදි කළ path)
+                    window.location.href = '/login.html';
                 }
             } catch (error) { console.error('Error fetching user data:', error); }
         });
 
+        // --- 2. "Play Game" බොත්තම click කිරීම ---
         playGameBtn.addEventListener('click', async () => {
             messageEl.textContent = 'Spending 1 ticket...';
+            
             try {
-                // (නිවැරදි කළ path)
-                const response = await fetch('/api/spend-ticket', { method: 'POST', headers: authHeaders });
+                const response = await fetch('/api/spend-ticket', {
+                    method: 'POST', headers: authHeaders
+                });
                 const data = await response.json();
+
                 if (response.ok) {
                     messageEl.className = 'success';
                     messageEl.textContent = data.message;
                     ticketCountEl.textContent = data.newTicketCount;
+                    
+                    // --- ක්‍රීඩාව ආරම්භ කිරීම ---
                     startGame();
                 } else {
                     messageEl.className = 'error';
@@ -137,52 +153,238 @@
             }
         });
 
+        // --- 3. ක්‍රීඩාව ආරම්භ කිරීමේ Function එක ---
         function startGame() {
             currentGameScore = 0;
             hasWonTickets = false;
-            scoreDisplayEl.textContent = 0;
-            gameAreaEl.style.display = 'block'; 
-            playGameBtn.style.display = 'none'; 
-            messageEl.textContent = 'Game started! Click the 💰 to score.';
+            isGameOver = false;
+            scoreDisplayEl.textContent = 'Score: 0';
+            gameContainerEl.style.display = 'block'; // සඟවා තිබූ game එක පෙන්වීම
+            playGameBtn.style.display = 'none'; // "Play Game" බොත්තම සඟවා තැබීම
+            walletBtn.style.display = 'none'; // Wallet බොත්තම සඟවා තැබීම
+            messageEl.textContent = 'Game started! Use ⬅️ and ➡️ keys to move.';
+            
+            // 3D Game Logic එක ආරම්භ කිරීම
+            init3DGame();
         }
 
-        coinButtonEl.addEventListener('click', () => {
-            if (hasWonTickets) return; 
-
-            currentGameScore += 50; 
-            scoreDisplayEl.textContent = currentGameScore;
-
-            if (currentGameScore >= 1000 && !hasWonTickets) {
-                hasWonTickets = true; 
-                messageEl.textContent = 'Score 1000 reached! Earning tickets...';
-                awardTickets(); 
-            }
+        // --- 4. Wallet එකට යෑම ---
+        walletBtn.addEventListener('click', () => {
+            window.location.href = '/wallet.html';
         });
 
+        // --- 5. Tickets 3ක් ලබා දීම ---
         async function awardTickets() {
+            if (hasWonTickets) return; // දැනටමත් tickets දී ඇත්නම් නැවත නොදීම
+            hasWonTickets = true;
+            isGameOver = true; // ක්‍රීඩාව නතර කිරීම
+
+            messageEl.className = 'success';
+            messageEl.textContent = 'Score 1000 reached! Earning tickets...';
+
             try {
-                // (නිවැරදි කළ path)
-                const response = await fetch('/api/earn-tickets', { method: 'POST', headers: authHeaders });
+                const response = await fetch('/api/earn-tickets', {
+                    method: 'POST', headers: authHeaders
+                });
                 const data = await response.json();
+
                 if (response.ok) {
-                    messageEl.className = 'success';
-                    messageEl.textContent = `You won! 3 tickets added. You now have ${data.newTicketCount} tickets.`;
+                    messageEl.textContent = `You Won! 3 tickets added. You now have ${data.newTicketCount} tickets.`;
                     ticketCountEl.textContent = data.newTicketCount;
-                    playGameBtn.style.display = 'inline-block';
-                    gameAreaEl.style.display = 'none';
                 } else {
-                    messageEl.className = 'error';
                     messageEl.textContent = `Error: ${data.message}`;
                 }
             } catch (error) {
                 messageEl.className = 'error';
                 messageEl.textContent = 'Could not connect to the server.';
+            } finally {
+                // ක්‍රීඩාව අවසන් වූ පසු නැවත බොත්තම් පෙන්වීම
+                playGameBtn.style.display = 'inline-block';
+                walletBtn.style.display = 'inline-block';
+                // gameContainerEl.style.display = 'none'; // Game එක නැවත සඟවා තැබීම
             }
         }
+
+        // --- 6. Game Over (බාධකයක වැදුනොත්) ---
+        function triggerGameOver() {
+            if (isGameOver) return; // දැනටමත් game over නම් නැවත නොකිරීම
+            isGameOver = true;
+            
+            messageEl.className = 'error';
+            messageEl.textContent = 'Game Over! You hit an obstacle.';
+            
+            // ක්‍රීඩාව අවසන් වූ පසු නැවත බොත්තම් පෙන්වීම
+            playGameBtn.style.display = 'inline-block';
+            walletBtn.style.display = 'inline-block';
+            // gameContainerEl.style.display = 'none'; // Game එක නැවත සඟවා තැබීම
+        }
+
+        // ******************************************************
+        // --- 7. THREE.JS 3D GAME LOGIC ---
+        // ******************************************************
+        let scene, camera, renderer, player, lanes, obstacles, coins;
+        const lanePositions = [-1.5, 0, 1.5]; // වම්, මැද, දකුණු
+        let currentLane = 1; // 0=වම්, 1=මැද, 2=දකුණු
+        let gameSpeed = 0.05;
+
+        function init3DGame() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2a2a2a);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, gameContainerEl.clientWidth / gameContainerEl.clientHeight, 0.1, 1000);
+            camera.position.set(0, 2, 5); // x, y, z
+            camera.lookAt(0, 1, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas') });
+            renderer.setSize(gameContainerEl.clientWidth, gameContainerEl.clientHeight);
+
+            // Light
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(0, 5, 5);
+            scene.add(dirLight);
+
+            // Ground (Floor)
+            const groundGeo = new THREE.PlaneGeometry(10, 40);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.5;
+            scene.add(ground);
+
+            // Player
+            const playerGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            const playerMat = new THREE.MeshStandardMaterial({ color: 0x007bff }); // නිල් පාට
+            player = new THREE.Mesh(playerGeo, playerMat);
+            player.position.y = 0;
+            player.position.z = 3; // Camera එකට කිට්ටුවෙන්
+            player.position.x = lanePositions[currentLane];
+            scene.add(player);
+
+            obstacles = [];
+            coins = [];
+
+            // 1000ක් වෙනකම් Coins 50 ගානේ spawn කිරීම
+            for (let i = -10; i > -200; i -= 10) {
+                 // බාධකයක් spawn කිරීම (රතු)
+                 spawnObstacle(i);
+                 // කාසියක් spawn කිරීම (කහ)
+                 spawnCoin(i - 5); // බාධකයට මදක් පිටුපසින්
+            }
+
+
+            // Key controls
+            document.addEventListener('keydown', handleKeyPress);
+
+            // Animate
+            animate();
+        }
+
+        function spawnObstacle(zPos) {
+            const lane = Math.floor(Math.random() * 3); // 0, 1, or 2
+            const geo = new THREE.BoxGeometry(1, 1, 1);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xf44336 }); // රතු පාට
+            const obstacle = new THREE.Mesh(geo, mat);
+            obstacle.position.set(lanePositions[lane], 0, zPos);
+            obstacles.push(obstacle);
+            scene.add(obstacle);
+        }
+
+        function spawnCoin(zPos) {
+             const lane = Math.floor(Math.random() * 3); // 0, 1, or 2
+             const geo = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16);
+             const mat = new THREE.MeshStandardMaterial({ color: 0xffc107 }); // කහ පාට
+             const coin = new THREE.Mesh(geo, mat);
+             coin.rotation.x = Math.PI / 2; // කාසිය හරවා තැබීම
+             coin.position.set(lanePositions[lane], 0, zPos);
+             coins.push(coin);
+             scene.add(coin);
+        }
+
+        function handleKeyPress(event) {
+            if (isGameOver) return;
+
+            if (event.key === 'ArrowLeft') {
+                if (currentLane > 0) {
+                    currentLane--;
+                }
+            } else if (event.key === 'ArrowRight') {
+                if (currentLane < 2) {
+                    currentLane++;
+                }
+            }
+            // Player ගේ X පිහිටීම smooth ලෙස වෙනස් කිරීම (Lerp)
+            // player.position.x = lanePositions[currentLane];
+        }
         
-        document.getElementById('wallet-btn').addEventListener('click', () => {
-            window.location.href = '/wallet.html'; // (නිවැරදි කළ path)
-        });
+        function checkCollision(obj) {
+            // AABB Collision Detection
+            const playerBox = new THREE.Box3().setFromObject(player);
+            const objBox = new THREE.Box3().setFromObject(obj);
+            return playerBox.intersectsBox(objBox);
+        }
+
+        function animate() {
+            if (isGameOver) {
+                // Game Over හෝ Win වූ විට, canvas එක render කිරීම නතර කිරීම
+                // (නමුත් renderer එක memory එකෙන් ඉවත් නොකිරීම)
+                return;
+            }
+            
+            requestAnimationFrame(animate);
+
+            // Player's horizontal movement (Smooth)
+            player.position.x += (lanePositions[currentLane] - player.position.x) * 0.1;
+
+            // Move obstacles towards player
+            obstacles.forEach((obstacle, index) => {
+                obstacle.position.z += gameSpeed;
+                // Collision check
+                if (checkCollision(obstacle)) {
+                    triggerGameOver();
+                }
+                // Remove if behind player
+                if (obstacle.position.z > camera.position.z) {
+                    scene.remove(obstacle);
+                    obstacles.splice(index, 1);
+                }
+            });
+
+            // Move coins towards player
+            coins.forEach((coin, index) => {
+                coin.position.z += gameSpeed;
+                // Collision check
+                if (checkCollision(coin)) {
+                    // Coin එකතු කිරීම
+                    currentGameScore += 100; // එක කාසියකට 100
+                    scoreDisplayEl.textContent = 'Score: ' + currentGameScore;
+                    scene.remove(coin);
+                    coins.splice(index, 1);
+                    
+                    // ලකුණු 1000 පරීක්ෂා කිරීම
+                    if (currentGameScore >= 1000) {
+                        awardTickets();
+                    }
+                }
+                // Remove if behind player
+                if (coin.position.z > camera.position.z) {
+                    scene.remove(coin);
+                    coins.splice(index, 1);
+                }
+            });
+            
+            // Game Speed එක ක්‍රමයෙන් වැඩි කිරීම (සීමාවක් දක්වා)
+            if (gameSpeed < 0.15) {
+                 gameSpeed += 0.00005;
+            }
+
+            renderer.render(scene, camera);
+        }
+
     </script>
 </body>
 </html>
