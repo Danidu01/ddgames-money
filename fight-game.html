@@ -1,126 +1,141 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fight Game - DD-Games Money</title>
     <style>
-        /* --- (අලුත්) Animation Keyframes --- */
-        @keyframes shake {
-            0% { transform: translateX(0) rotate(0); }
-            10% { transform: translateX(-10px) rotate(-5deg); }
-            20% { transform: translateX(10px) rotate(5deg); }
-            30% { transform: translateX(-10px) rotate(-5deg); }
-            40% { transform: translateX(10px) rotate(5deg); }
-            50% { transform: translateX(-10px) rotate(-5deg); }
-            60% { transform: translateX(10px) rotate(5deg); }
-            70% { transform: translateX(-10px) rotate(-5deg); }
-            80% { transform: translateX(10px) rotate(5deg); }
-            90% { transform: translateX(-10px) rotate(-5deg); }
-            100% { transform: translateX(0) rotate(0); }
-        }
-        .shake-animation {
-            animation: shake 0.5s ease-in-out 3;
-        }
-        /* --- --- */
-        
+        /* CSS styles (Final Version) */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #121212;
             color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
             margin: 0;
-            padding: 2rem 0;
-            /* --- (අලුත්) Background Image Styles --- */
+            overflow: hidden;
+            /* Background Image */
             background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            /* --- --- */
         }
         .container {
-            /* --- (වෙනස් කළා) Semi-Transparent Background --- */
             background-color: rgba(30, 30, 30, 0.9);
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            width: 450px;
+            width: 90vw;
+            max-width: 450px;
             text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .container h1 { margin-top: 0; color: #f44336; }
-
-        .info-bar {
-            /* --- (වෙනස් කළා) Semi-Transparent Background --- */
-            background-color: rgba(42, 42, 42, 0.9);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-around;
+        .container h1 {
+            margin-top: 0;
+            color: #dc3545; /* Red for Fight Game */
         }
-        .info-bar p { margin: 0.5rem; font-size: 1.1rem; font-weight: 500; }
-        .info-bar strong { color: #f44336; }
-
+        
+        /* Game UI sections */
         .game-section {
-            /* --- (වෙනස් කළා) Semi-Transparent Background --- */
-            background-color: rgba(42, 42, 42, 0.9);
             padding: 1.5rem;
             border-radius: 8px;
             margin-top: 1rem;
+            background-color: rgba(42, 42, 42, 0.8);
+        }
+        
+        /* Bet Section */
+        #bet-section {
+            display: block; /* Show by default */
+        }
+        
+        /* Game Play Section */
+        #game-play-section {
+            display: none; /* Hide by default */
+        }
+        
+        /* Animation Section */
+        #animation-section {
+            display: none; /* Hide by default */
+            font-size: 3rem;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* CSS Keyframe Animation for "shake" */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        .shaking {
+            animation: shake 0.5s linear infinite;
+        }
+        
+        /* Move Selection */
+        .moves {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-around;
+        }
+        .move-btn {
+            font-size: 3rem;
+            background: none;
+            border: 2px solid #ffc107;
+            color: #ffc107;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .move-btn:hover {
+            background-color: #ffc107;
+            color: #121212;
+            transform: scale(1.1);
+        }
+        
+        /* Result Display */
+        #result-display {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
         }
         
         .form-group { margin-bottom: 1rem; text-align: left; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
-        .form-group input { width: 100%; padding: 0.75rem; box-sizing: border-box; border: 1px solid #333; border-radius: 4px; background-color: #333; color: #ffffff; }
-
-        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #f44336; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin: 0.5rem; width: 100%; box-sizing: border-box; }
-        .btn:hover { background-color: #d32f2f; }
-        .btn:disabled { background-color: #5a6268; cursor: not-allowed; }
+        .form-group input { 
+            width: 100%; 
+            padding: 0.75rem; 
+            box-sizing: border-box; 
+            border: 1px solid #333; 
+            border-radius: 4px; 
+            background-color: #333; 
+            color: #ffffff; 
+        }
         
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #dc3545; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin: 0.5rem; width: 100%; box-sizing: border-box; }
+        .btn:hover { background-color: #c82333; }
         .btn-nav { background-color: #6c757d; }
         .btn-nav:hover { background-color: #5a6268; }
-
-        #message { margin-top: 1rem; font-size: 0.9rem; min-height: 20px; }
+        
+        #message, #game-message { 
+            margin-top: 1rem; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            min-height: 20px;
+        }
         .success { color: #4CAF50; }
         .error { color: #f44336; }
-
-        /* Game Choices */
-        #game-choices { margin-top: 1rem; }
-        .choice-btn { font-size: 3rem; background: none; border: 2px solid #555; border-radius: 8px; color: white; margin: 0 0.5rem; padding: 0.5rem 1rem; cursor: pointer; transition: all 0.2s; }
-        .choice-btn:hover { background-color: #f44336; border-color: #f44336; }
-        .choice-btn.selected { background-color: #007bff; border-color: #007bff; }
-        
-        #computer-choice { font-size: 3rem; margin-top: 1rem; }
-        
-        /* Animation Container */
-        #animation-container {
-            display: none;
-            padding: 2rem 0;
-        }
-        #animation-hands {
-            display: flex;
-            justify-content: center;
-            font-size: 3rem;
-            gap: 1.5rem;
-        }
-
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Fight Game (Betting)</h1>
+        <p>Your Tickets: <strong id="ticket-count">Loading...</strong> | Your Balance: LKR <strong id="balance">Loading...</strong></p>
         
-        <div class="info-bar">
-            <p>Balance: <strong id="balance-display">LKR 0.00</strong></p>
-            <p>Tickets: <strong id="ticket-count">0</strong></p>
-        </div>
-
-        <button id="wallet-btn" class="btn btn-nav">Go to Wallet</button>
-        <div id="message"></div>
-
         <!-- Bet Section -->
         <div id="bet-section" class="game-section">
             <h3>Place Your Bet</h3>
@@ -128,142 +143,225 @@
             <form id="bet-form">
                 <div class="form-group">
                     <label for="bet-amount">Bet Amount (LKR)</label>
-                    <input type="number" id="bet-amount" placeholder="e.g., 100" required>
+                    <input type="number" id="bet-amount" placeholder="e.g., 100" min="10" required>
                 </div>
-                <button type="submit" id="bet-btn" class="btn">Place Bet & Start Game</button>
+                <button type="submit" class="btn">Place Bet & Start Game</button>
             </form>
+            <div id="message"></div>
+            <button id="wallet-btn" class="btn btn-nav" style="margin-top: 20px;">Go to Wallet</button>
         </div>
-
-        <!-- Animation Section -->
-        <div id="animation-container" class="game-section">
-            <h3>Get Ready to Fight!</h3>
-            <div id="animation-hands" class="shake-animation">
+        
+        <!-- Game Play Section -->
+        <div id="game-play-section" class="game-section">
+            <!-- Animation Div -->
+            <div id="animation-section">
                 <span>✊</span>
                 <span>✋</span>
                 <span>✌️</span>
             </div>
-        </div>
-
-        <!-- Game Section -->
-        <div id="game-section" class="game-section" style="display: none;">
+            
             <h3>Make Your Move!</h3>
-            <p>Computer has made its choice.</p>
-            <div id="game-choices">
-                <button class="choice-btn" data-choice="rock">✊</button>
-                <button class="choice-btn" data-choice="paper">✋</button>
-                <button class="choice-btn" data-choice="scissors">✌️</button>
+            <div class="moves">
+                <button class="move-btn" data-move="rock">✊</button>
+                <button class="move-btn" data-move="paper">✋</button>
+                <button class="move-btn" data-move="scissors">✌️</button>
             </div>
-            <p id="game-result"></p>
-            <p>Computer chose: <span id="computer-choice">?</span></p>
+            <div id="result-display"></div>
+            <div id="game-message"></div>
         </div>
+        
     </div>
 
     <script>
-        // --- Setup ---
+        // --- 1. Global Variables & Auth ---
         const token = localStorage.getItem('ddUserToken');
-        const authHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-
-        // --- UI Elements ---
-        const messageEl = document.getElementById('message');
-        const balanceEl = document.getElementById('balance-display');
-        const ticketsEl = document.getElementById('ticket-count');
-        const betForm = document.getElementById('bet-form');
-        const betAmountInput = document.getElementById('bet-amount');
-        const betBtn = document.getElementById('bet-btn');
-        const betSection = document.getElementById('bet-section');
-        const gameSection = document.getElementById('game-section');
-        const animationContainer = document.getElementById('animation-container');
-        const gameResultEl = document.getElementById('game-result');
-        const computerChoiceEl = document.getElementById('computer-choice');
-        const choiceButtons = document.querySelectorAll('.choice-btn');
-
-        let currentBetAmount = 0;
-        const choices = ['rock', 'paper', 'scissors'];
-        const choiceEmojis = { rock: '✊', paper: '✋', scissors: '✌️' };
+        const authHeaders = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
         
-        // --- 1. Page Load: User Data ගෙන්වා ගැනීම ---
-        window.addEventListener('DOMContentLoaded', async () => {
-            if (!token) { window.location.href = '/login.html'; return; }
-            await updateUserData();
-        });
+        // Element cache
+        const messageEl = document.getElementById('message');
+        const gameMessageEl = document.getElementById('game-message');
+        const ticketCountEl = document.getElementById('ticket-count');
+        const balanceEl = document.getElementById('balance');
+        
+        const betSectionEl = document.getElementById('bet-section');
+        const gamePlaySectionEl = document.getElementById('game-play-section');
+        const betFormEl = document.getElementById('bet-form');
+        
+        const animationSectionEl = document.getElementById('animation-section');
+        const resultDisplayEl = document.getElementById('result-display');
+        
+        let currentBetAmount = 0;
 
-        // --- 2. Bet Form එක submit කිරීම ---
-        betForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const betAmount = Number(betAmountInput.value);
-            
-            if (betAmount <= 0) {
-                showMessage('Bet amount must be greater than 0.', 'error');
+        // --- 2. Initial Data Load ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!token) {
+                window.location.href = '/login.html'; // (Fixed Path)
                 return;
             }
             
-            showMessage('Placing bet and spending 1 ticket...', '');
-            betBtn.disabled = true;
-
+            // Fetch user data
             try {
-                // (නිවැරදි කළ path)
-                const response = await fetch('/api/spend-ticket', { method: 'POST', headers: authHeaders });
-                const data = await response.json();
-
+                // (Fixed Path)
+                const response = await fetch('/api/user-data', {
+                    method: 'GET', headers: authHeaders
+                });
                 if (response.ok) {
-                    showMessage('Ticket spent! Get ready...', 'success');
-                    ticketsEl.textContent = data.newTicketCount;
-                    currentBetAmount = betAmount;
-                    
-                    // --- Animation එක පෙන්වීම ---
-                    betSection.style.display = 'none';
-                    animationContainer.style.display = 'block';
-                    
-                    // --- Animation එකෙන් පසු ක්‍රීඩාව පෙන්වීම ---
-                    setTimeout(() => {
-                        animationContainer.style.display = 'none';
-                        startGame();
-                    }, 3000); // 3 seconds delay for animation
-
+                    const data = await response.json();
+                    updateUI(data.tickets, data.balance);
                 } else {
-                    showMessage(`Error: ${data.message}`, 'error');
-                    betBtn.disabled = false;
+                    localStorage.removeItem('ddUserToken');
+                    window.location.href = '/login.html'; // (Fixed Path)
                 }
-            } catch (error) {
-                showMessage('Could not connect to the server.', 'error');
-                betBtn.disabled = false;
+            } catch (error) { 
+                messageEl.className = 'error';
+                messageEl.textContent = 'Error loading user data.';
             }
         });
-
-        // --- 3. ක්‍රීඩාව ආරම්භ කිරීම ---
-        function startGame() {
-            gameSection.style.display = 'block';
-            gameResultEl.textContent = '';
-            computerChoiceEl.textContent = '?';
-            choiceButtons.forEach(btn => btn.disabled = false);
-            showMessage('Make your move!', '');
+        
+        // --- 3. UI Update Function ---
+        function updateUI(tickets, balance) {
+            ticketCountEl.textContent = tickets;
+            balanceEl.textContent = parseFloat(balance).toFixed(2);
         }
 
-        // --- 4. ක්‍රීඩකයාගේ තේරීම (Player Choice) ---
-        choiceButtons.forEach(button => {
+        // --- 4. Bet Form Submit ---
+        betFormEl.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const betAmountInput = document.getElementById('bet-amount');
+            currentBetAmount = Number(betAmountInput.value);
+            
+            if (currentBetAmount <= 0) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Please enter a valid bet amount.';
+                return;
+            }
+            
+            messageEl.textContent = 'Spending 1 ticket and placing bet...';
+            
+            // --- Step A: Spend 1 Ticket ---
+            try {
+                // (Fixed Path)
+                const spendResponse = await fetch('/api/spend-ticket', {
+                    method: 'POST', headers: authHeaders
+                });
+                const spendData = await spendResponse.json();
+
+                if (!spendResponse.ok) {
+                    messageEl.className = 'error';
+                    messageEl.textContent = `Error: ${spendData.message}`;
+                    return;
+                }
+                
+                // Ticket spent, now check balance for bet
+                if (parseFloat(balanceEl.textContent) < currentBetAmount) {
+                    messageEl.className = 'error';
+                    messageEl.textContent = 'Not enough balance for this bet!';
+                    // (Note: Ticket is already spent)
+                    return;
+                }
+                
+                // All checks passed! Start the game.
+                messageEl.textContent = 'Ticket spent! Get ready...';
+                updateUI(spendData.newTicketCount, balanceEl.textContent); // Update ticket count
+                
+                // Switch to game UI
+                betSectionEl.style.display = 'none';
+                gamePlaySectionEl.style.display = 'block';
+                
+                // Start animation
+                animationSectionEl.style.display = 'flex';
+                animationSectionEl.classList.add('shaking');
+                resultDisplayEl.textContent = 'Get Ready to Fight!';
+                gameMessageEl.textContent = '';
+                
+                // Stop animation after 3 seconds and show moves
+                setTimeout(() => {
+                    animationSectionEl.style.display = 'none';
+                    animationSectionEl.classList.remove('shaking');
+                    resultDisplayEl.textContent = 'Make Your Move!';
+                }, 3000); // 3 seconds
+
+            } catch (error) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Could not connect to the server.';
+            }
+        });
+        
+        // --- 5. Game Logic (Rock, Paper, Scissors) ---
+        document.querySelectorAll('.move-btn').forEach(button => {
             button.addEventListener('click', () => {
-                const playerChoice = button.getAttribute('data-choice');
-                const computerChoice = choices[Math.floor(Math.random() * choices.length)];
+                const playerMove = button.getAttribute('data-move');
+                const moves = ['rock', 'paper', 'scissors'];
+                const computerMove = moves[Math.floor(Math.random() * 3)];
                 
-                // Disable buttons after choice
-                choiceButtons.forEach(btn => btn.disabled = true);
+                const result = getGameResult(playerMove, computerMove);
                 
-                // Show computer's choice
-                computerChoiceEl.textContent = choiceEmojis[computerChoice];
+                let resultText = '';
+                let won = false;
                 
-                // Determine winner
-                const result = getWinner(playerChoice, computerChoice);
+                if (result === 'win') {
+                    resultText = `You Won! 🏆 (You: ${playerMove}, CPU: ${computerMove})`;
+                    won = true;
+                } else if (result === 'lose') {
+                    resultText = `You Lost! 😞 (You: ${playerMove}, CPU: ${computerMove})`;
+                    won = false;
+                } else {
+                    resultText = `It's a Tie! 🤝 (You: ${playerMove}, CPU: ${computerMove})`;
+                    // Tie logic - no money exchanged, return to bet screen
+                    resultDisplayEl.textContent = resultText;
+                    gameMessageEl.textContent = 'No money lost. Returning to bet screen...';
+                    setTimeout(resetGame, 2000);
+                    return;
+                }
                 
-                // Process the result
-                processGameEnd(result);
+                resultDisplayEl.textContent = resultText;
+                
+                // Disable buttons
+                document.querySelectorAll('.move-btn').forEach(btn => btn.disabled = true);
+                
+                // Process the bet result with the backend
+                processBetResult(currentBetAmount, won);
             });
         });
 
-        // --- 5. Winner තීරණය කිරීම ---
-        function getWinner(player, computer) {
-            if (player === computer) {
-                return 'tie';
+        // --- 6. Process Bet Result (Backend Call) ---
+        async function processBetResult(betAmount, didWin) {
+            gameMessageEl.textContent = 'Processing bet result...';
+            
+            try {
+                // (Fixed Path)
+                const response = await fetch('/api/fight-bet', {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify({ betAmount: betAmount, won: didWin })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    gameMessageEl.className = didWin ? 'success' : 'error';
+                    gameMessageEl.textContent = data.message;
+                    updateUI(ticketCountEl.textContent, data.newBalance); // Update balance
+                } else {
+                    gameMessageEl.className = 'error';
+                    gameMessageEl.textContent = `Error: ${data.message}`;
+                }
+                
+            } catch (error) {
+                gameMessageEl.className = 'error';
+                gameMessageEl.textContent = 'Could not connect to the server.';
+            } finally {
+                // Return to bet screen after 3 seconds
+                setTimeout(resetGame, 3000);
             }
+        }
+        
+        // --- 7. Helper Functions ---
+        function getGameResult(player, computer) {
+            if (player === computer) return 'tie';
             if (
                 (player === 'rock' && computer === 'scissors') ||
                 (player === 'paper' && computer === 'rock') ||
@@ -273,83 +371,24 @@
             }
             return 'lose';
         }
-
-        // --- 6. ක්‍රීඩාව අවසන් කර, Bet එක process කිරීම ---
-        async function processGameEnd(result) {
-            let message = '';
-            let won = false;
-
-            if (result === 'tie') {
-                message = "It's a Tie! Your bet is returned.";
-                won = 'tie'; // "tie" ලෙස යැවූ විට server එක මුදල් අඩු/වැඩි නොකරයි
-                gameResultEl.textContent = message;
-            } else if (result === 'win') {
-                message = "You Won! Processing winnings...";
-                won = true;
-                gameResultEl.className = 'success';
-                gameResultEl.textContent = message;
-            } else { // lose
-                message = "You Lost! Processing bet...";
-                won = false;
-                gameResultEl.className = 'error';
-                gameResultEl.textContent = message;
-            }
-
-            // Backend එකට Bet එක යැවීම
-            try {
-                // (නිවැරදි කළ path)
-                const response = await fetch('/api/fight-bet', {
-                    method: 'POST',
-                    headers: authHeaders,
-                    body: JSON.stringify({ betAmount: currentBetAmount, won: won })
-                });
-                const data = await response.json();
-
-                if (response.ok) {
-                    showMessage(data.message, 'success');
-                    updateUI(data.newBalance, null);
-                } else {
-                    showMessage(`Error: ${data.message}`, 'error');
-                }
-            } catch (error) {
-                showMessage('Could not connect to the server.', 'error');
-            }
-
-            // 3s කට පසු නැවත Bet තිරයට යෑම
-            setTimeout(() => {
-                gameSection.style.display = 'none';
-                betSection.style.display = 'block';
-                betAmountInput.value = '';
-                betBtn.disabled = false;
-                showMessage('Place a new bet to play again.', '');
-            }, 3000);
-        }
         
-        // --- Helper Functions ---
-        async function updateUserData() {
-            try {
-                // (නිවැරදි කළ path)
-                const response = await fetch('/api/user-data', { method: 'GET', headers: authHeaders });
-                if (response.ok) {
-                    const data = await response.json();
-                    balanceEl.textContent = `LKR ${parseFloat(data.balance).toFixed(2)}`;
-                    ticketsEl.textContent = data.tickets;
-                } else {
-                    localStorage.removeItem('ddUserToken');
-                    window.location.href = '/login.html'; // (නිවැරදි කළ path)
-                }
-            } catch (error) { console.error('Error fetching user data:', error); }
+        function resetGame() {
+            // Reset UI to bet screen
+            betSectionEl.style.display = 'block';
+            gamePlaySectionEl.style.display = 'none';
+            messageEl.textContent = '';
+            gameMessageEl.textContent = '';
+            resultDisplayEl.textContent = '';
+            document.getElementById('bet-amount').value = '';
+            document.querySelectorAll('.move-btn').forEach(btn => btn.disabled = false);
+            currentBetAmount = 0;
         }
 
-        function showMessage(msg, type) {
-            messageEl.textContent = msg;
-            messageEl.className = type; 
-        }
-
+        // --- 8. Go to Wallet Button ---
         document.getElementById('wallet-btn').addEventListener('click', () => {
-            window.location.href = '/wallet.html'; // (නිවැරදි කළ path)
+            window.location.href = '/wallet.html'; // (Fixed Path)
         });
+
     </script>
 </body>
 </html>
-

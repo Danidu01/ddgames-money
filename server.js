@@ -1,14 +1,21 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); 
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const path = require('path'); // HTML ගොනු serve කිරීමට අවශ්‍යයි
 
 const app = express();
-// Replit හි host කිරීමට මෙම වෙනස අවශ්‍යයි
+
+// (අලුත්) Replit/Railway/Hosting සඳහා PORT එක සකස් කිරීම
+// Replit/Railway මඟින් ලබාදෙන PORT එක (process.env.PORT) හෝ 3000 භාවිතා කරන්න
 const PORT = process.env.PORT || 3000; 
-const JWT_SECRET = 'your-very-strong-secret-key-12345';
+
+// (අලුත්) Hosting 'Secrets' (Variables) වලින් තොරතුරු ලබාගැනීම
+// Railway/Replit හි "Secrets" ටැබ් එකේ අප ඇතුළත් කළ Key-Value යුගල
+const JWT_SECRET = process.env.JWT_SECRET || 'your-very-strong-secret-key-12345'; // Local testing සඳහා default අගයක්
+const atlasConnectionString = process.env.atlasConnectionString || 'mongodb+srv://Danidu_Official:DD%40999Admin@cluster0.gakhyma.mongodb.net/ddGamesMoney?appName=Cluster0'; // Local testing සඳහා default අගයක්
+
 const OWNER_ACCOUNT_NAME = "Danidu Official"; // අයිතිකරුගේ ගිණුමේ නම
 
 // --- Middleware ---
@@ -20,16 +27,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // --- Database Connection (MongoDB Atlas) ---
-// Replit හි host කිරීමට, මෙම connection string එක "Secrets" (Environment Variables) එකකට දමන්න
-// const atlasConnectionString = 'mongodb+srv://Danidu_Official:DD%40999Admin@cluster0.gakhyma.mongodb.net/ddGamesMoney?appName=Cluster0';
-
-// Replit Secrets (Environment Variables) වෙතින් connection string එක ලබා ගැනීම
-const atlasConnectionString = process.env.atlasConnectionString;
-
-// Replit Secrets වෙතින් JWT Secret එක ලබා ගැනීම
-const effectiveJwtSecret = process.env.JWT_SECRET || JWT_SECRET;
-
-
+// (අලුත්) 'atlasConnectionString' variable එක භාවිතා කිරීම
 mongoose.connect(atlasConnectionString)
     .then(() => console.log('MongoDB Atlas connected...'))
     .catch(err => {
@@ -125,7 +123,7 @@ app.post('/api/login', async (req, res) => {
         }
         const token = jwt.sign(
             { id: user._id, accountName: user.accountName },
-            effectiveJwtSecret, // Replit Secret එක භාවිතා කිරීම
+            JWT_SECRET, // (අලුත්) Secret variable එක භාවිතා කිරීම
             { expiresIn: '1d' }
         );
         res.status(200).json({
@@ -143,7 +141,7 @@ const protect = (req, res, next) => {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, effectiveJwtSecret); // Replit Secret එක භාවිතා කිරීම
+            const decoded = jwt.verify(token, JWT_SECRET); // (අලුත්) Secret variable එක භාවිතා කිරීම
             req.user = decoded; 
             next();
         } catch (error) {
@@ -381,5 +379,5 @@ app.post('/api/withdraw', protect, async (req, res) => {
 // --- Start the server ---
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    // Replit.com හිදී, public URL එක ස්වයංක්‍රීයව පෙන්වයි
+    console.log(`Website available at: http://localhost:${PORT}/register.html`);
 });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,32 +7,31 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #121212;
             color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            /* --- (අලුත්) Background Image Styles --- */
+            overflow: hidden;
+            /* Background Image */
             background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            /* --- --- */
         }
         .container {
-            /* --- (වෙනස් කළා) Semi-Transparent Background --- */
-            background-color: rgba(30, 30, 30, 0.9);
+            background-color: rgba(30, 30, 30, 0.9); /* Semi-transparent background */
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            width: 300px;
+            width: 320px;
             text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .container h1 {
             margin-top: 0;
-            color: #007bff;
+            color: #007bff; /* Blue accent for Login */
         }
         .form-group {
             margin-bottom: 1rem;
@@ -46,7 +45,7 @@
         .form-group input {
             width: 100%;
             padding: 0.75rem;
-            box-sizing: border-box;
+            box-sizing: border-box; 
             border: 1px solid #333;
             border-radius: 4px;
             background-color: #2a2a2a;
@@ -70,7 +69,7 @@
         #message {
             margin-top: 1rem;
             font-size: 0.9rem;
-            min-height: 20px;
+            min-height: 20px; 
         }
         .success {
             color: #4CAF50;
@@ -82,8 +81,9 @@
             margin-top: 1rem;
             display: block;
             color: #aaa;
+            text-decoration: none;
         }
-         .nav-link:hover {
+        .nav-link:hover {
             color: #fff;
         }
     </style>
@@ -103,6 +103,7 @@
             <button type="submit" class="btn">Login</button>
         </form>
         <div id="message"></div>
+         <!-- (Fixed Link) "register.html" වෙනුවට "/register.html" (root path) -->
         <a href="/register.html" class="nav-link">Create an account</a>
     </div>
 
@@ -112,10 +113,14 @@
             const accountName = document.getElementById('account-name').value;
             const password = document.getElementById('password').value;
             const messageEl = document.getElementById('message');
-            messageEl.textContent = '';
+
+            messageEl.textContent = 'Logging in...';
+            messageEl.className = '';
 
             try {
-                const response = await fetch('/api/login', { // (නිවැරදි කළ path)
+                // (Fixed Path) "http://localhost:3000/api/login" වෙනුවට "/api/login"
+                // මෙය localhost සහ railway.app දෙකේදීම ක්‍රියා කරයි
+                const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ accountName, password })
@@ -127,16 +132,18 @@
                     messageEl.className = 'success';
                     messageEl.textContent = data.message;
                     
+                    // --- වැදගත්ම දේ: Token එක browser එකේ මතක තබා ගැනීම ---
                     localStorage.setItem('ddUserToken', data.token);
 
+                    // සාර්ථකව log වූ පසු, wallet.html වෙත යොමු කිරීම
                     setTimeout(() => {
-                        window.location.href = '/wallet.html'; // (නිවැරදි කළ path)
+                        window.location.href = '/wallet.html'; // (Fixed Path)
                     }, 1000);
 
                 } else {
                     messageEl.className = 'error';
                     messageEl.textContent = `Error: ${data.message}`;
-                    localStorage.removeItem('ddUserToken'); 
+                    localStorage.removeItem('ddUserToken'); // වැරදි නම් token ඉවත් කිරීම
                 }
             } catch (error) {
                 messageEl.className = 'error';
