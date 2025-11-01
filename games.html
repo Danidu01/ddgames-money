@@ -123,6 +123,7 @@
     </div>
 
     <script>
+        // --- (JavaScript කේතය - වෙනසක් නැත) ---
         const token = localStorage.getItem('ddUserToken');
         const authHeaders = {
             'Content-Type': 'application/json',
@@ -145,15 +146,11 @@
         let isGameOver = false;
         let playerColor = '#007bff'; 
 
-        // Sound Synths (Globalව නිර්මාණය කිරීම)
         let bgMusic, gameOverSound;
 
-        // --- 1. පිටුව load වූ සැණින් Ticket ගණන ගෙන්වා ගැනීම ---
         window.addEventListener('DOMContentLoaded', async () => {
             if (!token) { window.location.href = '/login.html'; return; }
             
-            // --- (අලුත්) Sound effects නිර්මාණය කිරීම ---
-            // (නමුත් Tone.start() මෙතන call නොකිරීම)
             bgMusic = new Tone.Loop(time => {
                 const synth = new Tone.Synth().toDestination();
                 synth.triggerAttackRelease("C2", "8n", time);
@@ -162,7 +159,6 @@
             
             gameOverSound = new Tone.Synth().toDestination();
             
-            // User data ගෙන්වා ගැනීම
             try {
                 const response = await fetch('/api/user-data', {
                     method: 'GET', headers: authHeaders
@@ -177,23 +173,17 @@
             } catch (error) { console.error('Error fetching user data:', error); }
         });
 
-        // --- 2. Character Selection ---
         selectBoyBtn.addEventListener('click', () => {
-            playerColor = '#007bff'; // නිල්
+            playerColor = '#007bff'; 
             spendTicketAndStartGame();
         });
         selectGirlBtn.addEventListener('click', () => {
-            playerColor = '#e91e63'; // රෝස
+            playerColor = '#e91e63'; 
             spendTicketAndStartGame();
         });
 
-        // --- 3. "Play Game" (Ticket වියදම් කිරීම) ---
         async function spendTicketAndStartGame() {
-            
-            // --- (මෙන්න අලුත් නිවැරදි කිරීම) Sound Engine එක User Click එකෙන් පටන් ගැනීම ---
             await Tone.start();
-            // ---
-            
             messageEl.textContent = 'Spending 1 ticket...';
             
             try {
@@ -206,8 +196,6 @@
                     messageEl.className = 'success';
                     messageEl.textContent = data.message;
                     ticketCountEl.textContent = data.newTicketCount;
-                    
-                    // --- ක්‍රීඩාව ආරම්භ කිරීම ---
                     startGame();
                 } else {
                     messageEl.className = 'error';
@@ -219,76 +207,66 @@
             }
         }
 
-        // --- 4. ක්‍රීඩාව ආරම්භ කිරීමේ Function එක ---
         function startGame() {
             currentGameScore = 0;
             isGameOver = false;
-            gameSpeed = 0.05; // Speed එක reset කිරීම
+            gameSpeed = 0.05; 
             scoreDisplayEl.textContent = 'Score: 0';
             
-            // UI එක වෙනස් කිරීම
             characterSelectEl.style.display = 'none'; 
-            gameContainerEl.style.display = 'block'; 
+            gameContainerEl.style.display = 'block'; // <<<--- Game එක පෙන්වීම
             gameOverScreenEl.style.display = 'none'; 
             messageEl.textContent = ''; 
             
-            // 3D Game Logic එක ආරම්භ කිරීම
-            init3DGame(playerColor);
+            // --- (වැදගත්ම දේ) Game එක පෙන්වූ පසු, කුඩා delay එකක් තබා init කිරීම ---
+            //මෙය browser එකට container එකේ size එක ගණනය කිරීමට කාලය ලබා දේ
+            setTimeout(() => {
+                init3DGame(playerColor); // <<<--- 3D Game Logic එක ආරම්භ කිරීම
+            }, 10); // මිලි තත්පර 10ක් ප්‍රමාණවත්
             
-            // (අලුත්) Background music එක පටන් ගැනීම
-            // Tone.start() දැනටමත් call කර ඇති නිසා, මෙය දැන් ක්‍රියාත්මක වේවි
             Tone.Transport.start();
             bgMusic.start(0);
         }
 
-        // --- 5. Wallet එකට යෑම ---
         walletBtn.addEventListener('click', () => {
             window.location.href = '/wallet.html';
         });
 
-        // --- 6. (වෙනස් කළ) Game Over (බාධකයක වැදුනොත්) ---
         function triggerGameOver() {
             if (isGameOver) return; 
             isGameOver = true;
             
-            // (අලුත්) Sound නැවැත්වීම සහ Game Over sound එක play කිරීම
             bgMusic.stop();
             Tone.Transport.stop();
-            // මෙය දැන් ක්‍රියාත්මක වේවි
             gameOverSound.triggerAttackRelease("C3", "0.5s");
             gameOverSound.triggerAttackRelease("G2", "0.5s", "+0.1s");
             gameOverSound.triggerAttackRelease("C2", "1s", "+0.2s");
             
-            // Game Over UI එක පෙන්වීම
             gameOverScoreEl.textContent = `Final Score: ${currentGameScore}`;
-            gameOverScreenEl.style.display = 'flex'; // පෙන්වීම
+            gameOverScreenEl.style.display = 'flex'; 
             
-            // (අලුත්) Score එක Wallet Balance එකට එකතු කිරීම
             if (currentGameScore > 0) {
                 postScoreToWallet(currentGameScore);
             } else {
                  messageEl.textContent = 'Game Over!';
             }
 
-            // තත්පර 3කට පසු Character Select තිරයට යොමු කිරීම
             setTimeout(() => {
                 characterSelectEl.style.display = 'block';
                 gameContainerEl.style.display = 'none';
-                window.location.reload(); // සරලම ක්‍රමය
+                window.location.reload(); 
             }, 3000);
         }
 
-        // --- 7. (අලුත්) Score එක Wallet Balance එකට එකතු කිරීම ---
         async function postScoreToWallet(score) {
             messageEl.className = 'success';
             messageEl.textContent = `Game Over! Adding ${score} coins to your wallet balance...`;
 
             try {
-                // '/api/reload' endpoint එක re-use කිරීම
                 const response = await fetch('/api/reload', {
                     method: 'POST',
                     headers: authHeaders,
-                    body: JSON.stringify({ amount: score }) // Score එක amount එක ලෙස යැවීම
+                    body: JSON.stringify({ amount: score }) 
                 });
                 const data = await response.json();
 
@@ -306,13 +284,14 @@
 
 
         // ******************************************************
-        // --- 8. THREE.JS 3D GAME LOGIC (වෙනසක් නැත) ---
+        // --- 8. THREE.JS 3D GAME LOGIC (Black Screen Fix) ---
         // ******************************************************
         let scene, camera, renderer, player, lanes, obstacles, coins, laneMarkers, buildings;
         const lanePositions = [-2, 0, 2]; 
         let currentLane = 1; 
 
         function init3DGame(selectedPlayerColor) {
+            // (අලුත්) පරණ scene එක (ඇත්නම්) පිරිසිදු කිරීම
             if (renderer) {
                 renderer.dispose();
                 scene.traverse(obj => {
@@ -320,14 +299,27 @@
                     if (obj.material) obj.material.dispose();
                 });
             }
+            
+            // (අලුත්) Canvas සහ Container Dimensions නිවැරදිව ලබා ගැනීම
+            const canvas = document.getElementById('game-canvas');
+            const rect = gameContainerEl.getBoundingClientRect(); // <<<--- මෙන්න නිවැරදි කිරීම
+            const width = rect.width;
+            const height = rect.height;
+
+            // --- (මෙතැන් සිට වෙනසක් නැත) ---
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x1a1a2a); 
             scene.fog = new THREE.Fog(0x1a1a2a, 10, 30); 
-            camera = new THREE.PerspectiveCamera(75, gameContainerEl.clientWidth / gameContainerEl.clientHeight, 0.1, 1000);
+            
+            // (අලුත්) Camera එකට නිවැරදි dimensions ලබා දීම
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
             camera.position.set(0, 1.5, 4); 
             camera.lookAt(0, 1, 0);
-            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias: true });
-            renderer.setSize(gameContainerEl.clientWidth, gameContainerEl.clientHeight);
+            
+            // (අලුත්) Renderer එකට නිවැරදි dimensions ලබා දීම
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(width, height);
+            
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             scene.add(ambientLight);
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -395,7 +387,7 @@
             const geo = isCar ? 
                 new THREE.BoxGeometry(1.6, 0.8, 2.5) : // Car shape
                 new THREE.BoxGeometry(1.8, 1.8, 3.5); // Truck shape
-            const mat = new THREE.MeshStandardMaterial({ color: isCar ? 0xf44336 : 0x607d8b }); // රතු Car / අළු Truck
+            const mat = new THREE.MeshStandardMaterial({ color: isCar ? 0xf44336 : 0x607d8b }); // Red Car / Grey Truck
             const obstacle = new THREE.Mesh(geo, mat);
             obstacle.position.set(lanePositions[lane], isCar ? -0.1 : 0.4, zPos);
             obstacles.push(obstacle);
@@ -403,8 +395,8 @@
         }
         function spawnCoin(zPos) {
              const lane = Math.floor(Math.random() * 3); 
-             const geo = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16); // Bitcoin හැඩය
-             const mat = new THREE.MeshStandardMaterial({ color: 0xffc107 }); // රන් පාට
+             const geo = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16); // Bitcoin shape
+             const mat = new THREE.MeshStandardMaterial({ color: 0xffc107 }); // Gold color
              const coin = new THREE.Mesh(geo, mat);
              coin.rotation.x = Math.PI / 2; 
              coin.rotation.z = Math.PI / 2; 
@@ -425,6 +417,7 @@
             }
         }
         function checkCollision(obj) {
+            // AABB Collision Detection
             const playerBox = new THREE.Box3().setFromObject(player);
             const objBox = new THREE.Box3().setFromObject(obj);
             return playerBox.intersectsBox(objBox);
@@ -464,7 +457,7 @@
                 coin.position.z += gameSpeed;
                 coin.rotation.z += 0.1; 
                 if (coin.position.z > 2.5 && coin.position.z < 3.5 && checkCollision(coin)) {
-                    currentGameScore += 1; // එක කාසියකට 1
+                    currentGameScore += 1; // 1 per coin
                     scoreDisplayEl.textContent = 'Score: ' + currentGameScore;
                     scene.remove(coin);
                     coins.splice(index, 1);
