@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - DD-Games Money</title>
     <style>
+        /* CSS styles (Final Version) */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #121212;
@@ -14,7 +15,7 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow: hidden; /* Stop scrollbars */
             /* Background Image */
             background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
             background-size: cover;
@@ -25,13 +26,13 @@
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            width: 320px;
+            width: 300px;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .container h1 {
             margin-top: 0;
-            color: #007bff; /* Blue accent for Login */
+            color: #007bff; /* Blue for Login */
         }
         .form-group {
             margin-bottom: 1rem;
@@ -45,7 +46,7 @@
         .form-group input {
             width: 100%;
             padding: 0.75rem;
-            box-sizing: border-box; 
+            box-sizing: border-box; /* Important for padding */
             border: 1px solid #333;
             border-radius: 4px;
             background-color: #2a2a2a;
@@ -69,7 +70,7 @@
         #message {
             margin-top: 1rem;
             font-size: 0.9rem;
-            min-height: 20px; 
+            min-height: 20px;
         }
         .success {
             color: #4CAF50;
@@ -103,7 +104,7 @@
             <button type="submit" class="btn">Login</button>
         </form>
         <div id="message"></div>
-         <!-- (Fixed Link) "register.html" වෙනුවට "/register.html" (root path) -->
+        <!-- (Fixed Path) -->
         <a href="/register.html" class="nav-link">Create an account</a>
     </div>
 
@@ -118,8 +119,7 @@
             messageEl.className = '';
 
             try {
-                // (Fixed Path) "http://localhost:3000/api/login" වෙනුවට "/api/login"
-                // මෙය localhost සහ railway.app දෙකේදීම ක්‍රියා කරයි
+                // (Fixed Path)
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -132,10 +132,10 @@
                     messageEl.className = 'success';
                     messageEl.textContent = data.message;
                     
-                    // --- වැදගත්ම දේ: Token එක browser එකේ මතක තබා ගැනීම ---
+                    // --- Store the Token ---
                     localStorage.setItem('ddUserToken', data.token);
 
-                    // සාර්ථකව log වූ පසු, wallet.html වෙත යොමු කිරීම
+                    // --- Redirect to Wallet ---
                     setTimeout(() => {
                         window.location.href = '/wallet.html'; // (Fixed Path)
                     }, 1000);
@@ -143,9 +143,10 @@
                 } else {
                     messageEl.className = 'error';
                     messageEl.textContent = `Error: ${data.message}`;
-                    localStorage.removeItem('ddUserToken'); // වැරදි නම් token ඉවත් කිරීම
+                    localStorage.removeItem('ddUserToken');
                 }
             } catch (error) {
+                console.error('Login Error:', error);
                 messageEl.className = 'error';
                 messageEl.textContent = 'Could not connect to the server.';
             }
@@ -153,3 +154,4 @@
     </script>
 </body>
 </html>
+

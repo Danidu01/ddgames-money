@@ -1,21 +1,17 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); 
+const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const path = require('path'); // HTML ගොනු serve කිරීමට අවශ්‍යයි
 
 const app = express();
-
-// (අලුත්) Replit/Railway/Hosting සඳහා PORT එක සකස් කිරීම
-// Replit/Railway මඟින් ලබාදෙන PORT එක (process.env.PORT) හෝ 3000 භාවිතා කරන්න
+// (අලුත්) Replit/Railway/Hosting සඳහා PORT එක ස්වයංක්‍රීයව ලබා ගැනීම
 const PORT = process.env.PORT || 3000; 
 
-// (අලුත්) Hosting 'Secrets' (Variables) වලින් තොරතුරු ලබාගැනීම
-// Railway/Replit හි "Secrets" ටැබ් එකේ අප ඇතුළත් කළ Key-Value යුගල
-const JWT_SECRET = process.env.JWT_SECRET || 'your-very-strong-secret-key-12345'; // Local testing සඳහා default අගයක්
-const atlasConnectionString = process.env.atlasConnectionString || 'mongodb+srv://Danidu_Official:DD%40999Admin@cluster0.gakhyma.mongodb.net/ddGamesMoney?appName=Cluster0'; // Local testing සඳහා default අගයක්
-
+// (අලුත්) Secrets (Environment Variables) වලින් අගයන් ලබා ගැනීම
+const JWT_SECRET = process.env.JWT_SECRET || 'your-very-strong-secret-key-12345';
+const atlasConnectionString = process.env.atlasConnectionString;
 const OWNER_ACCOUNT_NAME = "Danidu Official"; // අයිතිකරුගේ ගිණුමේ නම
 
 // --- Middleware ---
@@ -26,8 +22,17 @@ app.use(express.json());
 // server.js ගොනුව ඇති ෆෝල්ඩරයේම ඇති සියලුම .html ගොනු serve කරන්න
 app.use(express.static(path.join(__dirname)));
 
+// --- (අලුත්) Root URL (/) එක login.html වෙත යොමු කිරීම ---
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
+
 // --- Database Connection (MongoDB Atlas) ---
-// (අලුත්) 'atlasConnectionString' variable එක භාවිතා කිරීම
+if (!atlasConnectionString) {
+    console.error("FATAL ERROR: atlasConnectionString is not defined in Environment Variables.");
+    console.error("Please add atlasConnectionString to your Secrets (Railway, Replit, etc.)");
+}
+
 mongoose.connect(atlasConnectionString)
     .then(() => console.log('MongoDB Atlas connected...'))
     .catch(err => {
@@ -123,7 +128,7 @@ app.post('/api/login', async (req, res) => {
         }
         const token = jwt.sign(
             { id: user._id, accountName: user.accountName },
-            JWT_SECRET, // (අලුත්) Secret variable එක භාවිතා කිරීම
+            JWT_SECRET,
             { expiresIn: '1d' }
         );
         res.status(200).json({
@@ -141,7 +146,7 @@ const protect = (req, res, next) => {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, JWT_SECRET); // (අලුත්) Secret variable එක භාවිතා කිරීම
+            const decoded = jwt.verify(token, JWT_SECRET);
             req.user = decoded; 
             next();
         } catch (error) {
@@ -381,3 +386,4 @@ app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`Website available at: http://localhost:${PORT}/register.html`);
 });
+

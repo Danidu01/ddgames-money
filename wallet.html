@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Wallet - DD-Games Money</title>
     <style>
+        /* CSS styles (Final Version) */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #121212;
@@ -12,33 +13,38 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh; /* Full height */
-            padding: 2rem 0; /* Add some padding for scrolling */
+            height: 100vh;
             margin: 0;
-            overflow-x: hidden;
+            overflow: auto; /* Allow scrolling if content is too long */
             /* Background Image */
             background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
             background-size: cover;
             background-position: center;
-            background-attachment: fixed; /* Background image stays fixed */
+            background-attachment: fixed; /* Keep background fixed on scroll */
         }
         .container {
             background-color: rgba(30, 30, 30, 0.9); /* Semi-transparent background */
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            width: 90vw; /* Responsive width */
-            max-width: 500px; /* Max width */
+            width: 90vw;
+            max-width: 450px; /* Consistent width */
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            margin: 2rem 0; /* Add margin for small screens */
+            margin: 2rem 0; /* Add margin for scrolling */
         }
         .container h1 {
             margin-top: 0;
             color: #4CAF50;
         }
         
-        .wallet-info { text-align: left; margin-bottom: 1.5rem; }
+        .wallet-info { 
+            text-align: left; 
+            margin-bottom: 2rem; 
+            background-color: rgba(42, 42, 42, 0.8);
+            padding: 1rem;
+            border-radius: 8px;
+        }
         .wallet-info p { 
             font-size: 1.1rem; 
             margin: 0.5rem 0; 
@@ -46,26 +52,22 @@
             padding: 0.75rem; 
             border-radius: 4px; 
             display: flex;
-            justify-content: space-between; /* Align items nicely */
+            justify-content: space-between;
         }
         .wallet-info strong { 
             color: #4CAF50; 
-            min-width: 140px; /* "Account Number" එකට ඉඩ */
+            min-width: 120px; 
             display: inline-block; 
         }
-        .wallet-info span { color: #fff; }
-
-        /* Form sections */
+        
         .form-section {
             background-color: rgba(42, 42, 42, 0.8);
             padding: 1.5rem;
             border-radius: 8px;
             margin-top: 1.5rem;
-            text-align: left;
         }
-        .form-section h3 { margin-top: 0; }
         
-        .form-group { margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; text-align: left; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
         .form-group input { 
             width: 100%; 
@@ -73,7 +75,7 @@
             box-sizing: border-box; 
             border: 1px solid #333; 
             border-radius: 4px; 
-            background-color: #333; 
+            background-color: #333; /* Darker input */
             color: #ffffff; 
         }
         
@@ -81,140 +83,137 @@
             padding: 0.75rem 1.5rem; 
             border: none; 
             border-radius: 4px; 
-            background-color: #4CAF50; 
             color: white; 
             font-size: 1rem; 
             font-weight: 600; 
             cursor: pointer; 
             transition: background-color 0.2s; 
-            width: 100%; /* Make buttons full width */
+            margin: 0.5rem 0; 
+            width: 100%; /* Full width buttons */
             box-sizing: border-box;
-            margin-top: 0.5rem;
         }
-        .btn:hover { background-color: #45a049; }
+        .btn-green { background-color: #4CAF50; }
+        .btn-green:hover { background-color: #45a049; }
+        
+        .btn-blue { background-color: #007bff; }
+        .btn-blue:hover { background-color: #0069d9; }
+        
+        .btn-yellow { background-color: #ffc107; color: #121212; }
+        .btn-yellow:hover { background-color: #e0a800; }
+        
+        .btn-red { background-color: #dc3545; }
+        .btn-red:hover { background-color: #c82333; }
         
         .btn-logout { 
             background-color: #f44336; 
-            position: absolute; /* Top right corner */
-            top: 20px;
-            right: 20px;
-            width: auto; /* Logout button not full width */
+            position: absolute; /* Position in corner */
+            top: 15px;
+            right: 15px;
+            width: auto; /* Auto width for logout */
         }
         .btn-logout:hover { background-color: #d32f2f; }
         
-        .btn-game, .btn-buy { 
-            display: block; 
-            width: 100%; 
-            margin: 0.5rem 0; 
-            box-sizing: border-box; 
+        #message, #buy-message, #withdraw-message { 
+            margin-top: 1rem; 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            min-height: 20px;
         }
-        .btn-game { background-color: #ffc107; color: #121212; }
-        .btn-game:hover { background-color: #e0a800; }
-        .btn-fight-game { background-color: #dc3545; }
-        .btn-fight-game:hover { background-color: #c82333; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
         
-        /* Payment Instructions Div */
+        /* Payment Instructions */
         #payment-instructions {
             display: none; /* Hide by default */
-            background-color: #2a2a2a;
-            padding: 1.5rem;
-            border-radius: 8px;
             text-align: left;
+            padding: 1rem;
+            background-color: #333;
+            border-radius: 8px;
         }
-        #payment-instructions p { margin-top: 0; }
+        #payment-instructions p {
+            margin: 0.5rem 0;
+        }
         #payment-instructions code {
             background-color: #111;
-            padding: 2px 5px;
+            padding: 3px 6px;
             border-radius: 3px;
             color: #ffc107;
             font-size: 1.1rem;
         }
         
-        /* Withdraw Section Div */
+        /* Withdraw Section */
         #withdraw-section {
-            display: none; /* Hide by default */
-            border: 2px solid #00c853;
+            display: none; /* Hide until balance is 100,000 */
         }
         
-        #message, #reload-message, #buy-message, #withdraw-message { 
-            margin-top: 1rem; 
-            font-size: 0.9rem; 
-            font-weight: bold;
-            min-height: 20px;
-        }
-        .success { color: #4CAF50; }
-        .error { color: #f44336; }
     </style>
 </head>
 <body>
     <!-- Logout Button -->
     <button id="logout-btn" class="btn btn-logout">Logout</button>
-    
+
     <div class="container">
         <h1>My Wallet</h1>
         
+        <!-- Wallet Info -->
         <div class="wallet-info">
             <p><strong>Account Name:</strong> <span id="account-name">Loading...</span></p>
             <p><strong>Account Number:</strong> <span id="account-number">Loading...</span></p>
-            <p><strong>Balance:</strong> <span>LKR <span id="balance">0.00</span></span></p>
+            <p><strong>Balance:</strong> LKR <span id="balance">0.00</span></p>
             <p><strong>Tickets:</strong> <span id="tickets">0</span></p>
         </div>
-        
-        <div id="message"></div> <!-- General Message Area -->
 
         <!-- Reload Section -->
-        <div class="form-section" id="reload-section">
-            <h3>Reload Your Account</h3>
+        <div id="reload-section" class="form-section">
             <form id="reload-form">
+                <h3>Reload Your Account</h3>
                 <div class="form-group">
                     <label for="amount">Amount (LKR)</label>
-                    <input type="number" id="amount" placeholder="e.g., 500" min="50" required>
+                    <input type="number" id="amount" placeholder="e.g., 500" min="100" required>
                 </div>
-                <button type="submit" class="btn">Reload Now</button>
+                <button type="submit" class="btn btn-green">Reload Now</button>
             </form>
-            <!-- Payment instructions will appear here -->
             <div id="payment-instructions">
                 <h4>Payment Instructions</h4>
-                <p>Please transfer <strong id="payment-amount" style="color:#fff;">LKR 500.00</strong> to:</p>
-                <p><strong>Method:</strong> eZ Cash / mCash<br>
-                   <strong>Number:</strong> 0704966651 (Owner)</p>
-                <p>IMPORTANT: Please use your Account Number as the reference (memo):<br>
-                   <code id="payment-ref">Loading...</code>
-                </p>
-                <button id="confirm-payment-btn" class="btn">I have completed the payment</button>
-                <button id="cancel-payment-btn" class="btn" style="background-color:#6c757d; margin-top: 10px;">Cancel</button>
+                <p>Please transfer <strong><span id="reload-amount-display">LKR 0.00</span></strong> via eZ Cash / mCash to:</p>
+                <p style="text-align: center; font-size: 1.2rem; color: #fff;"><strong>0704966651</strong></p>
+                <p>IMPORTANT: You must enter your Account Number as the reference (Memo):</p>
+                <p style="text-align: center;"><code id="reload-account-display">Loading...</code></p>
+                <p>After completing the payment, click the button below:</p>
+                <button id="confirm-payment-btn" class="btn btn-green">I have completed the payment</button>
             </div>
-            <div id="reload-message"></div>
+            <div id="message"></div>
         </div>
-
+        
         <!-- Buy Tickets Section -->
-        <div class="form-section">
-            <h3>Buy Game Tickets</h3>
-            <p>Buy 5 Tickets for LKR 500.00</p>
-            <button id="buy-tickets-btn" class="btn btn-game">Buy 5 Tickets</button>
+        <div id="buy-tickets-section" class="form-section">
+            <h3>Buy Tickets</h3>
+            <p>Get 5 tickets for LKR 500.00</p>
+            <button id="buy-tickets-btn" class="btn btn-blue">Buy 5 Tickets</button>
             <div id="buy-message"></div>
         </div>
+        
+        <!-- Play Games Section -->
+        <div id="play-games-section" class="form-section">
+            <h3>Play Games</h3>
+            <button id="play-runner-btn" class="btn btn-yellow">Play Endless Runner (Earn Coins)</button>
+            <button id="play-fight-btn" class="btn btn-red">Play Fight Game (Bet Money)</button>
+        </div>
 
-        <!-- Withdraw Reward Section (Hidden by default) -->
-        <div class="form-section" id="withdraw-section">
-            <h3>🎉 Withdraw Your Reward! 🎉</h3>
-            <p>Congratulations! You've reached LKR 100,000. You can now withdraw LKR 100 as a phone reload.</p>
+        <!-- Withdraw Reward Section -->
+        <div id="withdraw-section" class="form-section">
+            <h3 style="color: #4CAF50;">🎉 Congratulations! 🎉</h3>
+            <p>You have over LKR 100,000. You can withdraw a LKR 100 reward!</p>
             <form id="withdraw-form">
                 <div class="form-group">
                     <label for="phone-number">Your Phone Number (for Reload)</label>
                     <input type="tel" id="phone-number" placeholder="e.g., 0771234567" required>
                 </div>
-                <button type="submit" class="btn" style="background-color:#00c853;">Withdraw LKR 100</button>
+                <button type="submit" class="btn btn-green">Withdraw LKR 100</button>
             </form>
             <div id="withdraw-message"></div>
         </div>
-
-        <!-- Play Games Section -->
-        <div class="form-section">
-            <h3>Play Games</h3>
-            <button id="play-runner-btn" class="btn btn-game">Play Endless Runner (Earn Coins)</button>
-            <button id="play-fight-btn" class="btn btn-fight-game">Play Fight Game (Bet Money)</button>
-        </div>
+        
     </div>
 
     <script>
@@ -225,27 +224,29 @@
             'Authorization': `Bearer ${token}`
         };
         
-        // Element cache
+        // --- Element Cache ---
         const accountNameEl = document.getElementById('account-name');
         const accountNumberEl = document.getElementById('account-number');
         const balanceEl = document.getElementById('balance');
         const ticketsEl = document.getElementById('tickets');
-        const messageEl = document.getElementById('message');
-        const reloadMessageEl = document.getElementById('reload-message');
-        const buyMessageEl = document.getElementById('buy-message');
-        const withdrawMessageEl = document.getElementById('withdraw-message');
         
-        const reloadSectionEl = document.getElementById('reload-section');
         const reloadFormEl = document.getElementById('reload-form');
+        const reloadAmountInput = document.getElementById('amount');
         const paymentInstructionsEl = document.getElementById('payment-instructions');
-        const paymentAmountEl = document.getElementById('payment-amount');
-        const paymentRefEl = document.getElementById('payment-ref');
+        const reloadAmountDisplayEl = document.getElementById('reload-amount-display');
+        const reloadAccountDisplayEl = document.getElementById('reload-account-display');
+        const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+        const messageEl = document.getElementById('message');
+        
+        const buyTicketsBtn = document.getElementById('buy-tickets-btn');
+        const buyMessageEl = document.getElementById('buy-message');
         
         const withdrawSectionEl = document.getElementById('withdraw-section');
         const withdrawFormEl = document.getElementById('withdraw-form');
-        
-        let currentBalance = 0;
-        let pendingReloadAmount = 0;
+        const phoneNumberInput = document.getElementById('phone-number');
+        const withdrawMessageEl = document.getElementById('withdraw-message');
+
+        let currentUserData = null; // Store user data globally
 
         // --- 2. Initial Data Load ---
         window.addEventListener('DOMContentLoaded', async () => {
@@ -253,149 +254,130 @@
                 window.location.href = '/login.html'; // (Fixed Path)
                 return;
             }
-
+            
+            // Fetch user data
             try {
                 // (Fixed Path)
                 const response = await fetch('/api/user-data', {
-                    method: 'GET',
-                    headers: authHeaders
+                    method: 'GET', headers: authHeaders
                 });
-
                 if (response.ok) {
                     const data = await response.json();
-                    updateWalletUI(data);
-                    
+                    currentUserData = data;
+                    updateUI(data);
                 } else {
-                    // Token is invalid or expired
                     localStorage.removeItem('ddUserToken');
                     window.location.href = '/login.html'; // (Fixed Path)
                 }
-            } catch (error) {
-                console.error('Error fetching user data:', error);
+            } catch (error) { 
+                console.error('Error loading user data:', error);
                 messageEl.className = 'error';
-                messageEl.textContent = 'Error loading wallet data. Please refresh.';
+                messageEl.textContent = 'Error loading user data.';
             }
         });
         
         // --- 3. UI Update Function ---
-        function updateWalletUI(data) {
-             accountNameEl.textContent = data.accountName;
-             accountNumberEl.textContent = data.accountNumber;
-             currentBalance = parseFloat(data.balance);
-             balanceEl.textContent = currentBalance.toFixed(2);
-             ticketsEl.textContent = data.tickets;
-             
-             // Check if user is eligible for withdrawal
-             if (currentBalance >= 100000) {
-                 withdrawSectionEl.style.display = 'block';
-             } else {
-                 withdrawSectionEl.style.display = 'none';
-             }
+        function updateUI(data) {
+            accountNameEl.textContent = data.accountName;
+            accountNumberEl.textContent = data.accountNumber;
+            balanceEl.textContent = parseFloat(data.balance).toFixed(2);
+            ticketsEl.textContent = data.tickets;
+            
+            // Show/Hide Withdraw section
+            if (data.balance >= 100000) {
+                withdrawSectionEl.style.display = 'block';
+            } else {
+                withdrawSectionEl.style.display = 'none';
+            }
         }
-        
-        // --- 4. Reload Logic (Payment Simulation) ---
+
+        // --- 4. Reload Form Submit (Show Instructions) ---
         reloadFormEl.addEventListener('submit', (event) => {
             event.preventDefault();
-            const amount = document.getElementById('amount').value;
-            pendingReloadAmount = Number(amount);
-            
-            if (pendingReloadAmount <= 0) {
-                reloadMessageEl.className = 'error';
-                reloadMessageEl.textContent = 'Please enter a valid amount.';
+            const amount = reloadAmountInput.value;
+            if (amount < 100) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Minimum reload is LKR 100.';
                 return;
             }
             
             // Show payment instructions
-            paymentAmountEl.textContent = `LKR ${pendingReloadAmount.toFixed(2)}`;
-            paymentRefEl.textContent = accountNumberEl.textContent; // Use loaded account number
+            reloadAmountDisplayEl.textContent = `LKR ${parseFloat(amount).toFixed(2)}`;
+            reloadAccountDisplayEl.textContent = currentUserData.accountNumber;
             reloadFormEl.style.display = 'none';
             paymentInstructionsEl.style.display = 'block';
-            reloadMessageEl.textContent = '';
+            messageEl.textContent = '';
         });
         
-        document.getElementById('cancel-payment-btn').addEventListener('click', () => {
-            // Hide payment instructions and show form
-            reloadFormEl.style.display = 'block';
-            paymentInstructionsEl.style.display = 'none';
-            document.getElementById('amount').value = '';
-        });
-        
-        document.getElementById('confirm-payment-btn').addEventListener('click', async () => {
-            reloadMessageEl.className = 'success';
-            reloadMessageEl.textContent = 'Confirming payment... Please wait.';
+        // --- 5. Confirm Payment (Simulated) ---
+        confirmPaymentBtn.addEventListener('click', async () => {
+            const amount = reloadAmountInput.value;
+            messageEl.textContent = 'Confirming payment...';
             
             try {
                 // (Fixed Path)
                 const response = await fetch('/api/reload', {
                     method: 'POST',
                     headers: authHeaders,
-                    body: JSON.stringify({ amount: pendingReloadAmount })
+                    body: JSON.stringify({ amount: amount })
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok) {
-                    reloadMessageEl.className = 'success';
-                    reloadMessageEl.textContent = data.message;
-                    // Update UI
-                    updateWalletUI({ 
-                        ...getUserDataFromUI(), // Get existing data
-                        balance: data.newBalance // Update balance
-                    });
+                    messageEl.className = 'success';
+                    messageEl.textContent = data.message;
+                    currentUserData.balance = data.newBalance; // Update global data
+                    updateUI(currentUserData); // Update all UI elements
                 } else {
-                    reloadMessageEl.className = 'error';
-                    reloadMessageEl.textContent = `Error: ${data.message}`;
+                    messageEl.className = 'error';
+                    messageEl.textContent = `Error: ${data.message}`;
                 }
+                
             } catch (error) {
-                 reloadMessageEl.className = 'error';
-                 reloadMessageEl.textContent = 'Could not connect to the server.';
+                messageEl.className = 'error';
+                messageEl.textContent = 'Could not connect to the server.';
             } finally {
-                // Reset the form
+                // Hide instructions and show form again
                 reloadFormEl.style.display = 'block';
                 paymentInstructionsEl.style.display = 'none';
-                document.getElementById('amount').value = '';
-                pendingReloadAmount = 0;
+                reloadAmountInput.value = ''; // Clear input
             }
         });
         
-        // --- 5. Buy Tickets Logic ---
-        document.getElementById('buy-tickets-btn').addEventListener('click', async () => {
-            buyMessageEl.className = 'success';
+        // --- 6. Buy Tickets Button ---
+        buyTicketsBtn.addEventListener('click', async () => {
             buyMessageEl.textContent = 'Processing purchase...';
-
+            
             try {
                 // (Fixed Path)
                 const response = await fetch('/api/buy-tickets', {
-                    method: 'POST',
-                    headers: authHeaders
+                    method: 'POST', headers: authHeaders
                 });
                 
                 const data = await response.json();
-
+                
                 if (response.ok) {
                     buyMessageEl.className = 'success';
                     buyMessageEl.textContent = data.message;
-                    // Update UI
-                    updateWalletUI({
-                        ...getUserDataFromUI(), // Get existing data
-                        balance: data.newBalance, // Update balance
-                        tickets: data.newTicketCount // Update tickets
-                    });
+                    currentUserData.balance = data.newBalance; // Update global data
+                    currentUserData.tickets = data.newTicketCount;
+                    updateUI(currentUserData); // Update all UI elements
                 } else {
                     buyMessageEl.className = 'error';
                     buyMessageEl.textContent = `Error: ${data.message}`;
                 }
+                
             } catch (error) {
-                 buyMessageEl.className = 'error';
-                 buyMessageEl.textContent = 'Could not connect to the server.';
+                buyMessageEl.className = 'error';
+                buyMessageEl.textContent = 'Could not connect to the server.';
             }
         });
         
-        // --- 6. Withdraw Reward Logic ---
+        // --- 7. Withdraw Form Submit ---
         withdrawFormEl.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const phoneNumber = document.getElementById('phone-number').value;
-            withdrawMessageEl.className = 'success';
+            const phoneNumber = phoneNumberInput.value;
             withdrawMessageEl.textContent = 'Submitting request...';
             
             try {
@@ -411,23 +393,21 @@
                 if (response.ok) {
                     withdrawMessageEl.className = 'success';
                     withdrawMessageEl.textContent = data.message;
-                    document.getElementById('phone-number').value = '';
-                    // Update UI
-                    updateWalletUI({
-                        ...getUserDataFromUI(), // Get existing data
-                        balance: data.newBalance // Update balance
-                    });
+                    currentUserData.balance = data.newBalance; // Update global data
+                    updateUI(currentUserData); // Update all UI elements
+                    phoneNumberInput.value = ''; // Clear input
                 } else {
                     withdrawMessageEl.className = 'error';
                     withdrawMessageEl.textContent = `Error: ${data.message}`;
                 }
+                
             } catch (error) {
-                 withdrawMessageEl.className = 'error';
-                 withdrawMessageEl.textContent = 'Could not connect to the server.';
+                withdrawMessageEl.className = 'error';
+                withdrawMessageEl.textContent = 'Could not connect to the server.';
             }
         });
-        
-        // --- 7. Game Hub Navigation ---
+
+        // --- 8. Navigation Buttons ---
         document.getElementById('play-runner-btn').addEventListener('click', () => {
             window.location.href = '/games.html'; // (Fixed Path)
         });
@@ -436,21 +416,12 @@
             window.location.href = '/fight-game.html'; // (Fixed Path)
         });
 
-        // --- 8. Logout ---
         document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('ddUserToken'); // Token එක ඉවත් කිරීම
+            localStorage.removeItem('ddUserToken');
             window.location.href = '/login.html'; // (Fixed Path)
         });
-        
-        // --- Helper function to get current UI data ---
-        function getUserDataFromUI() {
-            return {
-                accountName: accountNameEl.textContent,
-                accountNumber: accountNumberEl.textContent,
-                balance: parseFloat(balanceEl.textContent),
-                tickets: parseInt(ticketsEl.textContent)
-            };
-        }
+
     </script>
 </body>
 </html>
+

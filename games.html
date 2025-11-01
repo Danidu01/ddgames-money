@@ -63,8 +63,7 @@
             border-radius: 5px;
             z-index: 10;
         }
-        
-        /* Game Over Screen */
+        /* (අලුත්) Game Over Screen */
         #game-over-screen {
             position: absolute;
             top: 0;
@@ -72,11 +71,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
-            /* (Final Fix) display: none; වෙනුවට flex; සහ visibility: hidden; */
-            display: flex; 
-            visibility: hidden; /* Hide by default */
-            opacity: 0; /* Start invisible */
-            transition: opacity 0.5s ease; /* Fade-in effect */
+            display: none; /* --- මුලින් සඟවා තබයි --- */
             justify-content: center;
             align-items: center;
             flex-direction: column;
@@ -91,7 +86,7 @@
             color: #fff;
             margin-top: 10px;
         }
-        
+
         .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin: 0.5rem; }
         .btn:hover { background-color: #0069d9; }
         .btn-nav { background-color: #6c757d; }
@@ -118,6 +113,7 @@
             <button id="select-boy" class="btn">Play as Boy (Blue)</button>
             <button id="select-girl" class="btn btn-girl">Play as Girl (Pink)</button>
             <div id="message"></div>
+            <!-- (Fixed Path) -->
             <button id="wallet-btn" class="btn btn-nav" style="margin-top: 20px;">Go to Wallet</button>
         </div>
 
@@ -157,16 +153,19 @@
         let currentGameScore = 0;
         let isGameOver = false;
         let playerColor = '#007bff'; // Default to Boy (Blue)
+        let gameSpeed = 0.05;
 
         // Sound variables
         let bgMusic, gameOverSound;
-        let soundInitialized = false;
 
         // --- 2. Initial Data Load & Sound Setup ---
         window.addEventListener('DOMContentLoaded', async () => {
-            if (!token) { window.location.href = '/login.html'; return; }
+            if (!token) {
+                window.location.href = '/login.html'; // (Fixed Path)
+                return;
+            }
             
-            // Setup Sounds (but don't start)
+            // Setup Sounds (Browser AutoPlay Policy නිසා, start() function එක user click එකෙන් පසුවයි)
             bgMusic = new Tone.Loop(time => {
                 const synth = new Tone.Synth().toDestination();
                 synth.triggerAttackRelease("C2", "8n", time);
@@ -177,6 +176,7 @@
             
             // Fetch user data
             try {
+                // (Fixed Path)
                 const response = await fetch('/api/user-data', {
                     method: 'GET', headers: authHeaders
                 });
@@ -185,32 +185,33 @@
                     ticketCountEl.textContent = data.tickets;
                 } else {
                     localStorage.removeItem('ddUserToken');
-                    window.location.href = '/login.html';
+                    window.location.href = '/login.html'; // (Fixed Path)
                 }
-            } catch (error) { console.error('Error fetching user data:', error); }
+            } catch (error) { 
+                console.error('Error fetching user data:', error);
+                messageEl.className = 'error';
+                messageEl.textContent = 'Error loading user data.';
+            }
         });
 
         // --- 3. Character Selection ---
         selectBoyBtn.addEventListener('click', () => {
-            playerColor = '#007bff'; // Blue
+            playerColor = '#007bff'; // Boy (Blue)
             spendTicketAndStartGame();
         });
         selectGirlBtn.addEventListener('click', () => {
-            playerColor = '#e91e63'; // Pink
+            playerColor = '#e91e63'; // Girl (Pink)
             spendTicketAndStartGame();
         });
 
         // --- 4. Spend Ticket & Start Game ---
         async function spendTicketAndStartGame() {
-            // (Final Fix) Start Tone.js on the *first user interaction*
-            if (!soundInitialized) {
-                await Tone.start();
-                soundInitialized = true;
-            }
-            
+            // (Sound Fix) User ගේ පළමු click එකෙන් Tone.start() කිරීම
+            await Tone.start();
             messageEl.textContent = 'Spending 1 ticket...';
             
             try {
+                // (Fixed Path)
                 const response = await fetch('/api/spend-ticket', {
                     method: 'POST', headers: authHeaders
                 });
@@ -221,7 +222,7 @@
                     messageEl.textContent = data.message;
                     ticketCountEl.textContent = data.newTicketCount;
                     
-                    // --- Start the game ---
+                    // --- ක්‍රීඩාව ආරම්භ කිරීම ---
                     startGame();
                 } else {
                     messageEl.className = 'error';
@@ -233,82 +234,79 @@
             }
         }
 
-        // --- 5. Start Game Function ---
+        // --- 5. startGame (UI) ---
         function startGame() {
             currentGameScore = 0;
             isGameOver = false;
-            gameSpeed = 0.05; // Reset game speed
+            gameSpeed = 0.05; // Game speed එක reset කිරීම
             scoreDisplayEl.textContent = 'Score: 0';
             
-            characterSelectEl.style.display = 'none'; // Hide character select
-            gameContainerEl.style.display = 'block'; // <<<--- Show Game
-            gameOverScreenEl.style.visibility = 'hidden'; // Hide Game Over screen
-            gameOverScreenEl.style.opacity = 0;
-            messageEl.textContent = ''; // Clear message
+            characterSelectEl.style.display = 'none'; // Character select සඟවා තැබීම
+            gameContainerEl.style.display = 'block'; // Game එක පෙන්වීම
+            gameOverScreenEl.style.display = 'none'; // Game Over තිරය සඟවා තැබීම
+            messageEl.textContent = ''; // පරණ messages clear කිරීම
             
-            // (Final Fix) Use requestAnimationFrame to wait for the next frame
-            // This ensures the browser has rendered the 'gameContainerEl'
-            // and it has a valid width/height *before* init3DGame is called.
+            // --- (Black Screen Fix) ---
+            // 3D Game Logic එක, browser එකේ ඊළඟ frame එකේදී ආරම්භ කිරීම
+            // මෙය browser එකට container එකේ size (width/height) එක ගණනය කිරීමට කාලය ලබා දේ
             requestAnimationFrame(() => {
-                init3DGame(playerColor); // <<<--- Start 3D Game Logic
+                init3DGame(playerColor); // <<<--- 3D Game Logic එක ආරම්භ කිරීම
             });
             
-            // Start sounds
+            // Start Background Music
             Tone.Transport.start();
             bgMusic.start(0);
         }
 
         // --- 6. Go to Wallet Button ---
         walletBtn.addEventListener('click', () => {
-            window.location.href = '/wallet.html';
+            window.location.href = '/wallet.html'; // (Fixed Path)
         });
 
-        // --- 7. Game Over Logic ---
+        // --- 7. Game Over (බාධකයක වැදුනොත්) ---
         function triggerGameOver() {
-            if (isGameOver) return; // Only trigger once
+            if (isGameOver) return; // Game over දැනටමත් සිදුවී ඇත්නම්, නැවත නොකිරීම
             isGameOver = true;
             
-            // Stop game and music
+            // Stop Music & Play Game Over Sound
             bgMusic.stop();
             Tone.Transport.stop();
-            
-            // Play game over sound
             gameOverSound.triggerAttackRelease("C3", "0.5s");
             gameOverSound.triggerAttackRelease("G2", "0.5s", "+0.1s");
             gameOverSound.triggerAttackRelease("C2", "1s", "+0.2s");
             
-            // Show Game Over screen
+            // Show Game Over Screen
             gameOverScoreEl.textContent = `Final Score: ${currentGameScore}`;
-            gameOverScreenEl.style.visibility = 'visible';
-            gameOverScreenEl.style.opacity = 1;
+            gameOverScreenEl.style.display = 'flex'; // Game Over තිරය පෙන්වීම
             
-            // Post score to wallet
+            // Post Score to Wallet (Coins = LKR)
             if (currentGameScore > 0) {
                 postScoreToWallet(currentGameScore);
             } else {
                  messageEl.textContent = 'Game Over!';
             }
 
-            // Return to character select after 3 seconds
+            // 3 seconds පසු, Character Select තිරයට ආපසු යැවීම
             setTimeout(() => {
                 characterSelectEl.style.display = 'block';
                 gameContainerEl.style.display = 'none';
-                // (Final Fix) Don't reload, just reset UI
-                // window.location.reload(); 
-            }, 3000);
+                // (අලුත්) පිටුව reload කිරීමෙන් 3D game එක සම්පූර්ණයෙන්ම reset කිරීම
+                window.location.reload(); 
+            }, 3000); // තත්පර 3කට පසු
         }
 
-        // --- 8. Post Score to Wallet ---
+        // --- 8. Post Score (Coins) to Wallet Balance ---
         async function postScoreToWallet(score) {
             messageEl.className = 'success';
             messageEl.textContent = `Game Over! Adding ${score} coins to your wallet balance...`;
 
             try {
-                // Use /api/reload to add score (coins) to balance
+                // (Fixed Path)
+                // අපි /api/reload endpoint එකම Coins = LKR ලෙස භාවිතා කරමු
                 const response = await fetch('/api/reload', {
                     method: 'POST',
                     headers: authHeaders,
-                    body: JSON.stringify({ amount: score }) // Send final score
+                    body: JSON.stringify({ amount: score }) // Final Score එක Amount එක ලෙස යැවීම
                 });
                 const data = await response.json();
 
@@ -329,64 +327,51 @@
         // --- 9. THREE.JS 3D GAME LOGIC (Final Fix) ---
         // ******************************************************
         let scene, camera, renderer, player, lanes, obstacles, coins, laneMarkers, buildings;
-        const lanePositions = [-2, 0, 2]; // Lanes: Left, Center, Right
-        let currentLane = 1; // Start in center
+        const lanePositions = [-2, 0, 2]; // Lane positions (වම්, මැද, දකුණු)
+        let currentLane = 1; // 0=වම්, 1=මැද, 2=දකුණු
 
         function init3DGame(selectedPlayerColor) {
-            // Clear previous game (if any)
-            if (renderer) {
-                renderer.dispose();
-                scene.traverse(obj => {
-                    if (obj.geometry) obj.geometry.dispose();
-                    if (obj.material) obj.material.dispose();
-                });
-            }
-            
-            // (Final Fix) Get dimensions directly from the container
+            // (Black Screen Fix) Canvas සහ Container Dimensions නිවැරදිව ලබා ගැනීම
             const canvas = document.getElementById('game-canvas');
-            const rect = gameContainerEl.getBoundingClientRect();
+            const rect = gameContainerEl.getBoundingClientRect(); // <<<--- මෙන්න නිවැරදි කිරීම
             const width = rect.width;
             const height = rect.height;
 
-            if (width === 0 || height === 0) {
-                console.error("Game container has no size. Cannot render 3D scene.");
-                return; 
-            }
-
-            // Scene
+            // --- Scene Setup ---
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a2a); // Dark blue night sky
-            scene.fog = new THREE.Fog(0x1a1a2a, 10, 30); // Fog for atmosphere
+            scene.background = new THREE.Color(0x1a1a2a); // "Singapore" (Night City)
+            scene.fog = new THREE.Fog(0x1a1a2a, 10, 30); // දුරස්ථභාවය (Fog)
             
-            // Camera
+            // --- Camera ---
+            // (Fix) Camera එකට නිවැරදි dimensions (width/height) ලබා දීම
             camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            camera.position.set(0, 1.5, 4); // Positioned slightly up and back
+            camera.position.set(0, 1.5, 4); // x, y, z
             camera.lookAt(0, 1, 0);
             
-            // Renderer
+            // --- Renderer ---
+            // (Fix) Renderer එකට නිවැරදි dimensions (width/height) ලබා දීම
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
             renderer.setSize(width, height);
             
-            // Lighting
+            // --- Lights ---
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             scene.add(ambientLight);
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(2, 5, 5);
             scene.add(dirLight);
-            
-            // Player's "headlight"
+            // Player's "Headlight"
             const headLight = new THREE.SpotLight(0xffffff, 1, 20, Math.PI / 4, 0.5);
-            headLight.position.set(0, 0.5, 3.5); // Just in front of player
+            headLight.position.set(0, 0.5, 3.5); // Player ඉදිරියෙන්
             
-            // Highway Road
-            const groundGeo = new THREE.PlaneGeometry(10, 100);
-            const groundMat = new THREE.MeshStandardMaterial({ color: 0x333333 }); // Dark grey asphalt
+            // --- Ground / Highway ---
+            const groundGeo = new THREE.PlaneGeometry(10, 100); // (Highway)
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x333333 }); 
             const ground = new THREE.Mesh(groundGeo, groundMat);
             ground.rotation.x = -Math.PI / 2;
             ground.position.y = -0.5;
             scene.add(ground);
             
-            // Lane Markers
+            // Lane Markers (මාර්ගයේ ඉරි)
             laneMarkers = [];
             const markerGeo = new THREE.PlaneGeometry(0.2, 3);
             const markerMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
@@ -402,13 +387,13 @@
                 scene.add(marker2);
                 laneMarkers.push(marker2);
             }
-            
-            // City Buildings (Background)
+
+            // Buildings (City)
             buildings = [];
             const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
             for(let i = 0; i < 50; i++) {
                 const height = Math.random() * 15 + 5;
-                const mat = new THREE.MeshStandardMaterial({ color: 0x555555 }); // Dark buildings
+                const mat = new THREE.MeshStandardMaterial({ color: 0x555555 }); // City color
                 const building = new THREE.Mesh(buildingGeo, mat);
                 building.scale.set(Math.random() * 2 + 1, height, Math.random() * 2 + 1);
                 building.position.set((Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 6), height / 2 - 0.5, -(Math.random() * 100));
@@ -416,41 +401,46 @@
                 buildings.push(building);
             }
 
-            // Player (Boy/Girl Box)
-            const playerGeo = new THREE.BoxGeometry(0.6, 1.2, 0.6); // Character shape
+            // --- Player (Boy/Girl) ---
+            // (Boy = 0.6x1.2x0.6 Blue Box, Girl = 0.5x1.0x0.5 Pink Box)
+            const playerGeo = (selectedPlayerColor === '#e91e63') ? 
+                new THREE.BoxGeometry(0.5, 1.0, 0.5) : // Girl (Pink)
+                new THREE.BoxGeometry(0.6, 1.2, 0.6); // Boy (Blue)
             const playerMat = new THREE.MeshStandardMaterial({ color: selectedPlayerColor });
             player = new THREE.Mesh(playerGeo, playerMat);
-            player.position.y = 0.1; // Slightly above ground
-            player.position.z = 3; // Start in front of camera
+            player.position.y = (selectedPlayerColor === '#e91e63') ? 0.0 : 0.1; // Girl is shorter
+            player.position.z = 3; 
             player.position.x = lanePositions[currentLane];
             scene.add(player);
-            headLight.target = player; // Headlight follows player
+            headLight.target = player; // Headlight එක Player ව follow කිරීම
             scene.add(headLight);
 
-            // Obstacles and Coins
+            // --- Obstacles and Coins ---
             obstacles = [];
             coins = [];
-            for (let i = -10; i > -300; i -= (Math.random() * 10 + 8)) { // Spawn objects
+            
+            // Objects spawn කිරීම
+            for (let i = -10; i > -300; i -= (Math.random() * 10 + 8)) {
                  const rand = Math.random();
                  if (rand < 0.7) {
-                     spawnCoin(i); // 70% chance of coin
+                     spawnCoin(i); // 70% chance for coin
                  } else {
-                     spawnObstacle(i); // 30% chance of obstacle
+                     spawnObstacle(i); // 30% chance for obstacle
                  }
             }
+            
+            // Key controls
+            document.addEventListener('keydown', handleKeyPress);
 
-            // Add Key controls
-            document.removeEventListener('keydown', handleKeyPress); // Remove old listener
-            document.addEventListener('keydown', handleKeyPress); // Add new one
-
-            // Start animation loop
-            animate();
+            // Animate
+            // (Fix) renderer.setAnimationLoop() භාවිතා කිරීම (requestAnimationFrame() වෙනුවට)
+            renderer.setAnimationLoop(animate);
         }
 
-        // --- 10. Spawn Functions ---
+        // Obstacle (Cars/Trucks) Spawn කිරීම
         function spawnObstacle(zPos) {
-            const lane = Math.floor(Math.random() * 3); // Random lane
-            const isCar = Math.random() > 0.4; // 60% car, 40% truck
+            const lane = Math.floor(Math.random() * 3); // 0, 1, or 2
+            const isCar = Math.random() > 0.4; // 60% Car, 40% Truck
             const geo = isCar ? 
                 new THREE.BoxGeometry(1.6, 0.8, 2.5) : // Car shape
                 new THREE.BoxGeometry(1.8, 1.8, 3.5); // Truck shape
@@ -460,114 +450,117 @@
             obstacles.push(obstacle);
             scene.add(obstacle);
         }
+
+        // Coin (Bitcoin) Spawn කිරීම
         function spawnCoin(zPos) {
-             const lane = Math.floor(Math.random() * 3); // Random lane
+             const lane = Math.floor(Math.random() * 3); 
              const geo = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16); // Bitcoin shape
              const mat = new THREE.MeshStandardMaterial({ color: 0xffc107 }); // Gold color
              const coin = new THREE.Mesh(geo, mat);
-             coin.rotation.x = Math.PI / 2; // Lay flat
-             coin.rotation.z = Math.PI / 2; // Align with road
+             coin.rotation.x = Math.PI / 2; // Bitcoin එක හරවා තැබීම
+             coin.rotation.z = Math.PI / 2; // (මෙහි $ ලකුණ දැමීම texturing නොමැතිව කළ නොහැක)
              coin.position.set(lanePositions[lane], 0, zPos);
              coins.push(coin);
              scene.add(coin);
         }
 
-        // --- 11. Key Input ---
+        // Key Press handler
         function handleKeyPress(event) {
             if (isGameOver) return;
+            // Move Left
             if (event.key === 'ArrowLeft') {
                 if (currentLane > 0) {
                     currentLane--;
                 }
-            } else if (event.key === 'ArrowRight') {
+            } 
+            // Move Right
+            else if (event.key === 'ArrowRight') {
                 if (currentLane < 2) {
                     currentLane++;
                 }
             }
         }
         
-        // --- 12. Collision Detection ---
+        // Collision (ගැටුම්) පරීක්ෂා කිරීම
         function checkCollision(obj) {
-            if (!player) return false; // Safety check
+            if (!player || !obj) return false;
+            // AABB Collision Detection
             const playerBox = new THREE.Box3().setFromObject(player);
             const objBox = new THREE.Box3().setFromObject(obj);
             return playerBox.intersectsBox(objBox);
         }
 
-        // --- 13. Animation Loop ---
+        // --- 10. Animation Loop (Game Engine) ---
         function animate() {
+            // (Fix) isGameOver වූ විට, loop එක renderer එකෙන්ම නතර කිරීම
             if (isGameOver) {
-                // (Final Fix) Stop the animation loop
-                renderer.setAnimationLoop(null); 
+                renderer.setAnimationLoop(null);
                 return;
             }
             
-            // (Final Fix) Ensure renderer exists before looping
-            if (!renderer) return; 
-            renderer.setAnimationLoop(animate); // Use setAnimationLoop
-
-            // Smooth player movement
-            player.position.x += (lanePositions[currentLane] - player.position.x) * 0.15; // Faster lerp
+            // Player's horizontal movement (Smooth)
+            player.position.x += (lanePositions[currentLane] - player.position.x) * 0.15; // 0.15 = speed
             
-            // Difficulty scaling
-            // Score 0-79: 0.05
-            // Score 80-159: 0.051
-            // Score 160-239: 0.052
+            // Game Speed (Difficulty) - (ඔබගේ ඉල්ලීම පරිදි)
+            // සෑම කාසි 80කට වරක්ම 0.001 කින් වේගය වැඩි කිරීම
             gameSpeed = 0.05 + (Math.floor(currentGameScore / 80) * 0.001);
 
-            // Move road markers
+            // Move Lane Markers
             laneMarkers.forEach(marker => {
                 marker.position.z += gameSpeed;
                 if(marker.position.z > 5) {
-                    marker.position.z = -100; // Reset to back
+                    marker.position.z = -100; // නැවත පිටුපසට යැවීම
                 }
             });
             
-            // Move buildings (slower for parallax)
+            // Move Buildings
              buildings.forEach(b => {
-                b.position.z += gameSpeed * 0.5; 
+                b.position.z += gameSpeed * 0.5; // මාර්ගයට වඩා සෙමින්
                 if(b.position.z > 5) {
                     b.position.z = -100;
                 }
             });
 
-            // Move Obstacles
+            // Move Obstacles (වාහන)
             obstacles.forEach((obstacle, index) => {
                 obstacle.position.z += gameSpeed;
-                // Collision check (only when close)
+                
+                // Collision check (Player ට ආසන්න වූ විට පමණක්)
                 if (obstacle.position.z > 2.5 && obstacle.position.z < 3.5 && checkCollision(obstacle)) {
                     triggerGameOver();
                 }
-                // Respawn
+                
+                // Camera එක පසු කළ පසු, object එක ඉවත් කර, අලුත් එකක් spawn කිරීම
                 if (obstacle.position.z > camera.position.z + 2) {
                     scene.remove(obstacle);
                     obstacles.splice(index, 1);
-                    spawnObstacle(-100); // Spawn a new one
+                    spawnObstacle(-100); // ඈතින් අලුත් බාධකයක්
                 }
             });
 
             // Move Coins
             coins.forEach((coin, index) => {
                 coin.position.z += gameSpeed;
-                coin.rotation.z += 0.1; // Spin coin
+                coin.rotation.z += 0.1; // Coin එක කරකැවීම
                 
-                // Collision check (only when close)
+                // Collision check (Player ට ආසන්න වූ විට පමණක්)
                 if (coin.position.z > 2.5 && coin.position.z < 3.5 && checkCollision(coin)) {
-                    currentGameScore += 1; // 1 coin = +1
+                    currentGameScore += 1; // (ඔබගේ ඉල්ලීම: 1 per coin)
                     scoreDisplayEl.textContent = 'Score: ' + currentGameScore;
                     scene.remove(coin);
                     coins.splice(index, 1);
-                    // (No win condition at 1000)
+                    // (ලකුණු 1000දී නතර කිරීමේ කේතය ඉවත් කර ඇත)
                 }
                 
-                // Respawn
+                // Camera එක පසු කළ පසු, object එක ඉවත් කර, අලුත් එකක් spawn කිරීම
                 if (coin.position.z > camera.position.z + 2) {
                     scene.remove(coin);
                     coins.splice(index, 1);
-                    spawnCoin(-100); // Spawn a new one
+                    spawnCoin(-100); // ඈතින් අලුත් කාසියක්
                 }
             });
             
+            // Render the scene
             renderer.render(scene, camera);
         }
 
