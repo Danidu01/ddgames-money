@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Game - DD-Games Money</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            /* --- (අලුත්) Background Image Styles --- */
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            /* --- --- */
+        }
+        .container {
+            /* --- (වෙනස් කළා) Semi-Transparent Background --- */
+            background-color: rgba(30, 30, 30, 0.9);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            width: 450px;
+            text-align: center;
+        }
+        .container h1 { margin-top: 0; color: #ffc107; }
+
+        #game-area {
+            /* --- (වෙනස් කළා) Semi-Transparent Background --- */
+            background-color: rgba(42, 42, 42, 0.9);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none; 
+        }
+        #coin-button {
+            font-size: 4rem;
+            cursor: pointer;
+            transition: transform 0.1s;
+            user-select: none; 
+        }
+        #coin-button:active {
+            transform: scale(0.9);
+        }
+        #score-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffc107;
+        }
+
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin: 0.5rem; }
+        .btn:hover { background-color: #0069d9; }
+        .btn-nav { background-color: #6c757d; }
+        .btn-nav:hover { background-color: #5a6268; }
+
+        #message { margin-top: 1rem; font-size: 0.9rem; min-height: 20px; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Endless Runner Game</h1>
+        <p>Your Tickets: <strong id="ticket-count">Loading...</strong></p>
+        
+        <button id="play-game-btn" class="btn">Play Game (Costs 1 Ticket)</button>
+        <button id="wallet-btn" class="btn btn-nav">Go to Wallet</button>
+        
+        <div id="message"></div>
+
+        <!-- The Actual Game Area -->
+        <div id="game-area">
+            <h3>Collect 1000 Coins!</h3>
+            <div id="coin-button">💰</div>
+            <p>Score: <span id="score-display">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('ddUserToken');
+        const authHeaders = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        
+        const messageEl = document.getElementById('message');
+        const ticketCountEl = document.getElementById('ticket-count');
+        const gameAreaEl = document.getElementById('game-area');
+        const scoreDisplayEl = document.getElementById('score-display');
+        const coinButtonEl = document.getElementById('coin-button');
+        const playGameBtn = document.getElementById('play-game-btn');
+
+        let currentGameScore = 0;
+        let hasWonTickets = false; 
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!token) { window.location.href = '/login.html'; return; }
+            
+            try {
+                // (නිවැරදි කළ path)
+                const response = await fetch('/api/user-data', { method: 'GET', headers: authHeaders });
+                if (response.ok) {
+                    const data = await response.json();
+                    ticketCountEl.textContent = data.tickets;
+                } else {
+                    localStorage.removeItem('ddUserToken');
+                    window.location.href = '/login.html'; // (නිවැරදි කළ path)
+                }
+            } catch (error) { console.error('Error fetching user data:', error); }
+        });
+
+        playGameBtn.addEventListener('click', async () => {
+            messageEl.textContent = 'Spending 1 ticket...';
+            try {
+                // (නිවැරදි කළ path)
+                const response = await fetch('/api/spend-ticket', { method: 'POST', headers: authHeaders });
+                const data = await response.json();
+                if (response.ok) {
+                    messageEl.className = 'success';
+                    messageEl.textContent = data.message;
+                    ticketCountEl.textContent = data.newTicketCount;
+                    startGame();
+                } else {
+                    messageEl.className = 'error';
+                    messageEl.textContent = `Error: ${data.message}`;
+                }
+            } catch (error) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Could not connect to the server.';
+            }
+        });
+
+        function startGame() {
+            currentGameScore = 0;
+            hasWonTickets = false;
+            scoreDisplayEl.textContent = 0;
+            gameAreaEl.style.display = 'block'; 
+            playGameBtn.style.display = 'none'; 
+            messageEl.textContent = 'Game started! Click the 💰 to score.';
+        }
+
+        coinButtonEl.addEventListener('click', () => {
+            if (hasWonTickets) return; 
+
+            currentGameScore += 50; 
+            scoreDisplayEl.textContent = currentGameScore;
+
+            if (currentGameScore >= 1000 && !hasWonTickets) {
+                hasWonTickets = true; 
+                messageEl.textContent = 'Score 1000 reached! Earning tickets...';
+                awardTickets(); 
+            }
+        });
+
+        async function awardTickets() {
+            try {
+                // (නිවැරදි කළ path)
+                const response = await fetch('/api/earn-tickets', { method: 'POST', headers: authHeaders });
+                const data = await response.json();
+                if (response.ok) {
+                    messageEl.className = 'success';
+                    messageEl.textContent = `You won! 3 tickets added. You now have ${data.newTicketCount} tickets.`;
+                    ticketCountEl.textContent = data.newTicketCount;
+                    playGameBtn.style.display = 'inline-block';
+                    gameAreaEl.style.display = 'none';
+                } else {
+                    messageEl.className = 'error';
+                    messageEl.textContent = `Error: ${data.message}`;
+                }
+            } catch (error) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Could not connect to the server.';
+            }
+        }
+        
+        document.getElementById('wallet-btn').addEventListener('click', () => {
+            window.location.href = '/wallet.html'; // (නිවැරදි කළ path)
+        });
+    </script>
+</body>
+</html>
