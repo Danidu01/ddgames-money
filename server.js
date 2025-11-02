@@ -1,57 +1,48 @@
+// server.js (Car Racing Game Plan - FINAL)
+
+// --- Imports ---
 const express = require('express');
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); 
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const path = require('path'); // HTML ගොනු serve කිරීමට අවශ්‍යයි
 
+// --- App Setup ---
 const app = express();
-// (අලුත්) Replit/Railway/Hosting සඳහා PORT එක ස්වයංක්‍රීයව ලබා ගැනීම
+// (Railway/Replit සඳහා) PORT එක ස්වයංක්‍රීයව ලබා ගැනීම
 const PORT = process.env.PORT || 3000; 
 
-// (අලුත්) Secrets (Environment Variables) වලින් අගයන් ලබා ගැනීම
-const JWT_SECRET = process.env.JWT_SECRET || 'your-very-strong-secret-key-12345';
+// --- Secrets (Railway/Replit "Variables" වෙතින් ලබා ගනී) ---
+const JWT_SECRET = process.env.JWT_SECRET || 'your-default-secret-key-12345';
 const atlasConnectionString = process.env.atlasConnectionString;
 const OWNER_ACCOUNT_NAME = "Danidu Official"; // අයිතිකරුගේ ගිණුමේ නම
 
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
-
-// --- (අලුත්) HTML, CSS, JS ගොනු Serve කිරීම ---
-// server.js ගොනුව ඇති ෆෝල්ඩරයේම ඇති සියලුම .html ගොනු serve කරන්න
-app.use(express.static(path.join(__dirname)));
-
-// --- (අලුත්) Root URL (/) එක login.html වෙත යොමු කිරීම ---
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'login.html'));
-});
+app.use(express.static(path.join(__dirname))); // HTML ගොනු serve කිරීම
 
 // --- Database Connection (MongoDB Atlas) ---
 if (!atlasConnectionString) {
     console.error("FATAL ERROR: atlasConnectionString is not defined in Environment Variables.");
-    console.error("Please add atlasConnectionString to your Secrets (Railway, Replit, etc.)");
+    console.log("Please add atlasConnectionString to your Railway/Replit Secrets.");
+} else {
+    mongoose.connect(atlasConnectionString)
+        .then(() => console.log('MongoDB Atlas connected...'))
+        .catch(err => {
+            console.error("MongoDB Connection Error:", err.message);
+        });
 }
 
-mongoose.connect(atlasConnectionString)
-    .then(() => console.log('MongoDB Atlas connected...'))
-    .catch(err => {
-        console.error("MongoDB Connection Error:", err.message);
-        if (err.code === 8000) {
-            console.error("   >>> Authentication Failed. Please check username/password in connection string.");
-        }
-        if (err.name === 'MongooseServerSelectionError') {
-             console.error("   >>> Network Error. Cannot find host. Check internet connection or DNS settings.");
-        }
-    });
-
-// --- User Database Model ---
+// --- (අලුත්) User Database Model (Car Speed ඇතුළත්) ---
 const UserSchema = new mongoose.Schema({
     accountName: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     accountNumber: { type: Number, required: true, unique: true },
     balance: { type: Number, default: 0 },
-    tickets: { type: Number, default: 0 }
+    tickets: { type: Number, default: 0 },
+    carSpeedLevel: { type: Number, default: 1 } // (අලුත්) 1 = Base speed
 });
 const User = mongoose.model('User', UserSchema);
 
@@ -59,10 +50,9 @@ const User = mongoose.model('User', UserSchema);
 const WithdrawalSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     accountName: { type: String, required: true },
-    accountNumber: { type: Number, required: true },
-    phoneNumber: { type: String, required: true }, // Reload එක යැවිය යුතු අංකය
+    phoneNumber: { type: String, required: true },
     amount: { type: Number, required: true, default: 100 },
-    status: { type: String, default: 'Pending' }, // e.g., Pending, Completed
+    status: { type: String, default: 'Pending' }, 
     requestedAt: { type: Date, default: Date.now }
 });
 const Withdrawal = mongoose.model('Withdrawal', WithdrawalSchema);
@@ -100,6 +90,7 @@ app.post('/api/register', async (req, res) => {
             accountName: accountName,
             password: hashedPassword,
             accountNumber: accountNumber
+            // carSpeedLevel will use default '1'
         });
         await newUser.save();
         res.status(201).json({
@@ -161,6 +152,7 @@ const protect = (req, res, next) => {
 // --- API Endpoint to GET USER DATA (Wallet) ---
 app.get('/api/user-data', protect, async (req, res) => {
     try {
+        // (අලුත්) Car Speed එකද select කිරීම
         const user = await User.findById(req.user.id).select('-password');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -169,7 +161,8 @@ app.get('/api/user-data', protect, async (req, res) => {
             accountName: user.accountName,
             accountNumber: user.accountNumber,
             balance: user.balance,
-            tickets: user.tickets
+            tickets: user.tickets,
+            carSpeedLevel: user.carSpeedLevel // (අලුත්)
         });
     } catch (error) {
         res.status(500).json({ message: 'Server error.' });
@@ -194,53 +187,6 @@ app.post('/api/reload', protect, async (req, res) => {
             newBalance: updatedUser.balance
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error.' });
-    }
-});
-
-// --- API Endpoint to EARN TICKETS ---
-app.post('/api/earn-tickets', protect, async (req, res) => {
-    try {
-        const ticketsToAward = 3;
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
-            { $inc: { tickets: ticketsToAward } },
-            { new: true }
-        ).select('-password');
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.status(200).json({
-            message: '3 tickets awarded successfully!',
-            newTicketCount: updatedUser.tickets
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error.' });
-    }
-});
-
-// --- API Endpoint to SPEND TICKETS ---
-app.post('/api/spend-ticket', protect, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        if (user.tickets <= 0) {
-            return res.status(400).json({ message: 'Not enough tickets to play!' });
-        }
-        const updatedUser = await User.findByIdAndUpdate(
-            req.user.id,
-            { $inc: { tickets: -1 } },
-            { new: true }
-        ).select('-password');
-        res.status(200).json({
-            message: 'Ticket spent successfully. Good luck!',
-            newTicketCount: updatedUser.tickets
-        });
-    } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Server error.' });
     }
 });
@@ -273,57 +219,64 @@ app.post('/api/buy-tickets', protect, async (req, res) => {
             newTicketCount: updatedUser.tickets
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Server error.' });
     }
 });
 
-
-// --- API Endpoint for FIGHT GAME BET ---
-app.post('/api/fight-bet', protect, async (req, res) => {
+// --- API Endpoint to SPEND TICKETS (Car Race සඳහා) ---
+app.post('/api/spend-ticket', protect, async (req, res) => {
     try {
-        const { betAmount, won } = req.body;
-        const bet = Number(betAmount);
-        
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        if (user.balance < bet) {
-            return res.status(400).json({ message: 'Not enough balance for this bet!' });
+        if (user.tickets <= 0) {
+            return res.status(400).json({ message: 'Not enough tickets to play the race!' });
         }
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            { $inc: { tickets: -1 } },
+            { new: true }
+        ).select('-password');
+        res.status(200).json({
+            message: 'Ticket spent successfully. Good luck in the race!',
+            newTicketCount: updatedUser.tickets
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
 
-        let newBalance;
-        let message;
+// --- (අලුත්) API Endpoint for CAR RACE COMPLETE ---
+app.post('/api/race-complete', protect, async (req, res) => {
+    try {
+        const { rank } = req.body; // Frontend එකෙන් එවයි: 1, 2, 3, or 4+
+        let prizeMoney = 0;
+        let message = '';
 
-        if (won) {
-            // දිනුවොත්: Bet එක මෙන් දෙගුණයක් (Player's bet + Opponent's bet) දිනයි
-            // Net result: Balance + bet
-            newBalance = user.balance + bet;
-            message = `You Won! You received LKR ${bet * 2} (your ${bet} + opponent's ${bet}).`;
-            
-            await User.findByIdAndUpdate(req.user.id, { $inc: { balance: bet } });
-
+        if (rank === 1) {
+            prizeMoney = 500; // 1st Place
+            message = 'Congratulations! You finished 1st and won LKR 500!';
+        } else if (rank === 2) {
+            prizeMoney = 250; // 2nd Place
+            message = 'Great race! You finished 2nd and won LKR 250!';
+        } else if (rank === 3) {
+            prizeMoney = 100; // 3rd Place
+            message = 'Good job! You finished 3rd and won LKR 100!';
         } else {
-            // පැරදුනොත්: Bet කළ මුදල අහිමි වේ
-            newBalance = user.balance - bet;
-            message = `You Lost! You lost your bet of LKR ${bet}.`;
-            
-            await User.findByIdAndUpdate(req.user.id, { $inc: { balance: -bet } });
-
-            // --- Owner's Commission Logic ---
-            const commission = bet * 0.02; // 2% commission
-            
-            // "Danidu Official" ගිණුම සොයා, 2% commission එක එකතු කිරීම
-            await User.findOneAndUpdate(
-                { accountName: OWNER_ACCOUNT_NAME },
-                { $inc: { balance: commission } }
-            );
+            prizeMoney = 0; // 4th, 5th, 6th
+            message = 'Game Over. You finished outside the top 3. Better luck next time!';
         }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            { $inc: { balance: prizeMoney } },
+            { new: true }
+        ).select('-password');
 
         res.status(200).json({
             message: message,
-            newBalance: newBalance
+            newBalance: updatedUser.balance
         });
 
     } catch (error) {
@@ -332,43 +285,93 @@ app.post('/api/fight-bet', protect, async (req, res) => {
     }
 });
 
+// --- (අලුත්) API Endpoint to GET CAR DATA (Garage සඳහා) ---
+app.get('/api/get-car-data', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('carSpeedLevel');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.status(200).json({
+            carSpeedLevel: user.carSpeedLevel
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
+
+// --- (අලුත්) API Endpoint to UPGRADE CAR (Garage/eZ Cash) ---
+app.post('/api/upgrade-car', protect, async (req, res) => {
+    try {
+        const upgradeCost = 50; // LKR 50
+        
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        if (user.balance < upgradeCost) {
+            return res.status(400).json({ message: 'Not enough balance to upgrade! Reload first.' });
+        }
+
+        // LKR 50 අඩු කර, carSpeedLevel එක 1කින් වැඩි කිරීම
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id,
+            { 
+                $inc: { 
+                    balance: -upgradeCost, 
+                    carSpeedLevel: 1 
+                } 
+            },
+            { new: true }
+        ).select('-password');
+
+        res.status(200).json({
+            message: 'Upgrade Successful! Your car is now faster.',
+            newBalance: updatedUser.balance,
+            newCarSpeedLevel: updatedUser.carSpeedLevel
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
+
+
 // --- API Endpoint for WITHDRAWAL ---
 app.post('/api/withdraw', protect, async (req, res) => {
     try {
         const { phoneNumber } = req.body;
-        const withdrawAmount = 100; // ත්‍යාග මුදල
-        const requiredBalance = 100000; // අවශ්‍ය ශේෂය
+        const withdrawAmount = 100;
+        const requiredBalance = 100000;
 
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
         if (user.balance < requiredBalance) {
-            return res.status(400).json({ message: 'You need at least LKR 100,000 to withdraw.' });
+            return res.status(400).json({ message: `You need at least LKR ${requiredBalance} to withdraw.` });
         }
-        if (!phoneNumber || phoneNumber.length < 9) { // Basic phone number validation
+        if (!phoneNumber || phoneNumber.length < 9) {
             return res.status(400).json({ message: 'Please enter a valid phone number.' });
         }
 
-        // 1. පරිශීලකයාගේ Balance එකෙන් LKR 100,000 අඩු කිරීම
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
             { $inc: { balance: -requiredBalance } },
             { new: true }
         ).select('-password');
 
-        // 2. "Withdrawals" collection එකේ අලුත් request එකක් සටහන් කිරීම
         const newWithdrawal = new Withdrawal({
             userId: user._id,
             accountName: user.accountName,
             accountNumber: user.accountNumber,
             phoneNumber: phoneNumber,
             amount: withdrawAmount,
-            status: 'Pending' // Admin විසින් මෙය 'Completed' කළ යුතුය
+            status: 'Pending'
         });
         await newWithdrawal.save();
         
-        // 3. Frontend එකට සාර්ථක පණිවිඩය යැවීම
         res.status(200).json({
             message: `Withdrawal request for LKR ${withdrawAmount} submitted! You will receive a reload to ${phoneNumber} soon.`,
             newBalance: updatedUser.balance
@@ -383,7 +386,6 @@ app.post('/api/withdraw', protect, async (req, res) => {
 
 // --- Start the server ---
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Website available at: http://localhost:${PORT}/register.html`);
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Website available at: http://localhost:${PORT}/login.html (or your Railway/Replit URL)`);
 });
-

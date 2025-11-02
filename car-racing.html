@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Racing - DD-Games Money</title>
+    <style>
+        /* CSS styles (Final Car Game Version) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            /* Background Image */
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
+            background-size: cover;
+            background-position: center;
+        }
+        .container {
+            background-color: rgba(30, 30, 30, 0.9);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            width: 90vw;
+            max-width: 600px; /* Game එකට වැඩි ඉඩක් */
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .container h1 {
+            margin-top: 0;
+            color: #007bff; /* Blue for car game */
+        }
+        
+        /* Game styles */
+        #game-container {
+            width: 100%;
+            height: 400px; /* Game Canvas එකේ උස */
+            background-color: #000;
+            margin-top: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none; /* --- මුලින් සඟවා තබයි --- */
+            position: relative; /* UI elements උඩින් පෙන්වීමට */
+        }
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Game UI (Position, Lap, Message) */
+        .game-ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            z-index: 10;
+        }
+        #game-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #ffc107;
+            text-shadow: 2px 2px 8px #000;
+            z-index: 20;
+            display: none; /* Hide by default */
+        }
+
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin: 0.5rem; }
+        .btn:hover { background-color: #0069d9; }
+        .btn-nav { background-color: #6c757d; }
+        .btn-nav:hover { background-color: #5a6268; }
+        
+        #message { margin-top: 1rem; font-size: 1.1rem; font-weight: bold; min-height: 20px; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+    </style>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Tone.js Library (ශබ්ද සඳහා) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Pre-Game UI -->
+        <div id="pre-game-ui">
+            <h1>Car Racing Game</h1>
+            <p>Your Tickets: <strong id="ticket-count">Loading...</strong> | Your Car Level: <strong id="car-level">Loading...</strong></p>
+            <p>Finish in the Top 3 to win Prize Money!</p>
+            <ul style="text-align: left; background-color: #2a2a2a; padding: 10px 30px; border-radius: 5px;">
+                <li>1st Place: LKR 500</li>
+                <li>2nd Place: LKR 250</li>
+                <li>3rd Place: LKR 100</li>
+            </ul>
+            <button id="play-game-btn" class="btn">Start Race (Costs 1 Ticket)</button>
+            <div id="message"></div>
+            <button id="wallet-btn" class="btn btn-nav" style="margin-top: 20px;">Go to Wallet</button>
+        </div>
+
+        <!-- The Actual Game Area -->
+        <div id="game-container">
+            <canvas id="game-canvas"></canvas>
+            <!-- Game UI -->
+            <div class="game-ui">
+                <span id="position-display">Position: 6 / 6</span>
+                <span id="lap-display">Lap: 1 / 2</span>
+            </div>
+            <!-- Game Message (e.g., 3, 2, 1, GO!, GAME OVER) -->
+            <div id="game-message">3</div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Global Variables & Auth ---
+        const token = localStorage.getItem('ddUserToken');
+        const authHeaders = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        
+        // --- Element Cache ---
+        const messageEl = document.getElementById('message');
+        const ticketCountEl = document.getElementById('ticket-count');
+        const carLevelEl = document.getElementById('car-level');
+        
+        const preGameUIEl = document.getElementById('pre-game-ui');
+        const gameContainerEl = document.getElementById('game-container');
+        
+        const playGameBtn = document.getElementById('play-game-btn');
+        const walletBtn = document.getElementById('wallet-btn');
+        
+        const positionDisplayEl = document.getElementById('position-display');
+        const lapDisplayEl = document.getElementById('lap-display');
+        const gameMessageEl = document.getElementById('game-message');
+
+        let isGameRunning = false;
+        let carSpeedLevel = 1; // Default
+        
+        let engineSound, winSound, loseSound;
+
+        // --- 2. Initial Data Load ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!token) { window.location.href = '/login.html'; return; }
+            
+            // --- Sound Engine එක Setup කිරීම ---
+            // (Browser AutoPlay Policy එකට අනුව, user ගේ click එකකින් පසුව Tone.start() කළ යුතුය)
+            engineSound = new Tone.NoiseSynth({
+                noise: { type: 'brown' },
+                envelope: { attack: 0.1, decay: 0.2, sustain: 1, release: 0.5 }
+            }).toDestination();
+            engineSound.volume.value = -20; // ශබ්දය අඩු කිරීම
+
+            winSound = new Tone.Synth().toDestination();
+            loseSound = new Tone.Synth().toDestination();
+            
+            // --- User Data ගෙන්වා ගැනීම ---
+            try {
+                // (Host Fix)
+                const response = await fetch('/api/user-data', {
+                    method: 'GET', headers: authHeaders
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    ticketCountEl.textContent = data.tickets;
+                    carLevelEl.textContent = `Level ${data.carSpeedLevel}`;
+                    carSpeedLevel = data.carSpeedLevel; // Car speed එක save කර ගැනීම
+                } else {
+                    localStorage.removeItem('ddUserToken');
+                    window.location.href = '/login.html';
+                }
+            } catch (error) { 
+                console.error('Error fetching user data:', error);
+                messageEl.className = 'error';
+                messageEl.textContent = 'Error loading user data.';
+            }
+        });
+
+        // --- 3. "Play Game" බොත්තම click කිරීම ---
+        playGameBtn.addEventListener('click', async () => {
+            // (Sound Fix) User ගේ click එකෙන් පසුව Tone.start() කිරීම
+            await Tone.start();
+            
+            messageEl.textContent = 'Spending 1 ticket...';
+            
+            try {
+                // (Host Fix)
+                const response = await fetch('/api/spend-ticket', {
+                    method: 'POST', headers: authHeaders
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageEl.className = 'success';
+                    messageEl.textContent = data.message;
+                    ticketCountEl.textContent = data.newTicketCount;
+                    
+                    // --- ක්‍රීඩාව ආරම්භ කිරීම ---
+                    startGame();
+                } else {
+                    messageEl.className = 'error';
+                    messageEl.textContent = `Error: ${data.message}`;
+                }
+            } catch (error) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Could not connect to the server.';
+            }
+        });
+
+        // --- 4. ක්‍රීඩාව ආරම්භ කිරීමේ Function එක ---
+        function startGame() {
+            isGameRunning = true;
+            
+            // UI එක මාරු කිරීම
+            preGameUIEl.style.display = 'none'; 
+            gameContainerEl.style.display = 'block'; 
+            
+            // --- (Black Screen Fix) Game එක පෙන්වූ පසු, ඊළඟ frame එකේ init කිරීම ---
+            requestAnimationFrame(() => {
+                init3DGame(); // 3D Game Logic එක ආරම්භ කිරීම
+            });
+        }
+        
+        // --- 5. "Go to Wallet" බොත්තම ---
+        walletBtn.addEventListener('click', () => {
+            window.location.href = '/wallet.html'; // (Host Fix)
+        });
+
+        // --- 6. Game Over Function (දිනුවත්/පැරදුනත්) ---
+        async function triggerGameOver(finalRank) {
+            if (!isGameRunning) return; // දැනටමත් game over නම් නැවත නොකිරීම
+            isGameRunning = false;
+            
+            // Sound නතර කිරීම
+            engineSound.triggerRelease();
+            Tone.Transport.stop();
+            
+            // UI එක update කිරීම
+            gameMessageEl.style.display = 'block';
+            
+            let resultMessage = '';
+            if (finalRank <= 3) {
+                resultMessage = `Finished: ${finalRank}st`;
+                winSound.triggerAttackRelease("C4", "0.5s");
+                winSound.triggerAttackRelease("G4", "0.5s", "+0.2s");
+            } else {
+                resultMessage = 'GAME OVER';
+                loseSound.triggerAttackRelease("C3", "1s");
+            }
+            gameMessageEl.textContent = resultMessage;
+
+            // --- Step B: Backend එකට Rank එක යවා, Prize Money (ඇත්නම්) ලබා ගැනීම ---
+            try {
+                // (Host Fix)
+                const response = await fetch('/api/race-complete', {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify({ rank: finalRank })
+                });
+                const data = await response.json();
+                
+                // Server එකෙන් ආ පණිවිඩය (e.g., "You Won LKR 500!") පෙන්වීම
+                messageEl.className = (finalRank <= 3) ? 'success' : 'error';
+                messageEl.textContent = data.message;
+                
+            } catch (error) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Could not save final score.';
+            }
+            
+            // තත්පර 3 කට පසු Wallet එකට යොමු කිරීම
+            setTimeout(() => {
+                window.location.href = '/wallet.html'; // (Host Fix)
+            }, 3000);
+        }
+
+        // ******************************************************
+        // --- 7. THREE.JS 3D CAR RACING GAME LOGIC ---
+        // ******************************************************
+        let scene, camera, renderer, playerCar, aiCars;
+        const lanePositions = [-2, 0, 2]; // වම්, මැද, දකුණු
+        let currentLane = 1; // 0=වම්, 1=මැද, 2=දකුණු
+        let raceTime = 0;
+        const totalLaps = 2;
+        let currentLap = 1;
+        
+        // Player ගේ වේගය, Garage එකෙන් upgrade කළ Level එක අනුව
+        // Base Speed (0.1) + (Level * 0.01)
+        let playerBaseSpeed = 0.1 + (carSpeedLevel * 0.01); 
+        let playerSpeed = playerBaseSpeed;
+
+        function init3DGame() {
+            // (Black Screen Fix) Canvas සහ Container Dimensions නිවැරදිව ලබා ගැනීම
+            const canvas = document.getElementById('game-canvas');
+            const rect = gameContainerEl.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x4a69bd); // අහස (Blue sky)
+            scene.fog = new THREE.Fog(0x4a69bd, 20, 50); 
+            
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.set(0, 3, 5); // Car එකට පිටුපසින් සහ ඉහළින්
+            camera.lookAt(0, 1, -10); // පාර දෙස බැලීම
+            
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(width, height);
+            
+            // --- Light ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            scene.add(dirLight);
+
+            // --- Racetrack (Dawana Pathaya) ---
+            const trackGeo = new THREE.PlaneGeometry(10, 100); // දිග පාරක්
+            const trackMat = new THREE.MeshStandardMaterial({ color: 0x444444 }); // තාර (Asphalt)
+            const track = new THREE.Mesh(trackGeo, trackMat);
+            track.rotation.x = -Math.PI / 2;
+            track.position.y = -0.5;
+            scene.add(track);
+
+            // Lane markers
+            const markerGeo = new THREE.PlaneGeometry(0.2, 100);
+            const markerMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const marker1 = new THREE.Mesh(markerGeo, markerMat);
+            marker1.rotation.x = -Math.PI / 2;
+            marker1.position.set(-1, -0.49, 0);
+            scene.add(marker1);
+            const marker2 = new THREE.Mesh(markerGeo, markerMat);
+            marker2.rotation.x = -Math.PI / 2;
+            marker2.position.set(1, -0.49, 0);
+            scene.add(marker2);
+            
+            // Finish Line
+            const finishLineGeo = new THREE.PlaneGeometry(10, 2);
+            const finishLineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: new THREE.TextureLoader().load("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///8AAABVwtN+AAAAAXRSTlMAQObYZgAAABNJREFUCNdjYGBgYGBgYGBgYAAAADEAAS42k30AAAAASUVORK5CYII=") }); // Checkerboard texture
+            finishLineMat.map.repeat.set(5, 1);
+            finishLineMat.map.wrapS = THREE.RepeatWrapping;
+            finishLineMat.map.wrapT = THREE.RepeatWrapping;
+            const finishLine = new THREE.Mesh(finishLineGeo, finishLineMat);
+            finishLine.rotation.x = -Math.PI / 2;
+            finishLine.position.set(0, -0.48, -45); // පාරේ අවසානය
+            scene.add(finishLine);
+
+            // --- Player Car (BMW Simulation) ---
+            playerCar = createCar(0x007bff); // නිල් (Blue)
+            playerCar.position.set(lanePositions[currentLane], 0, 0); // ආරම්භක ස්ථානය
+            scene.add(playerCar);
+            
+            // --- AI Cars (5) ---
+            aiCars = [];
+            const colors = [0xf44336, 0x4CAF50, 0xffc107, 0x9c27b0, 0x607d8b]; // Red, Green, Yellow, Purple, Grey
+            for (let i = 0; i < 5; i++) {
+                const aiCar = createCar(colors[i]);
+                // AI cars, player ට මදක් ඉදිරියෙන්, විවිධ lanes වල තැබීම
+                aiCar.position.set(lanePositions[Math.floor(Math.random() * 3)], 0, -(Math.random() * 10 + 5)); 
+                aiCar.aiSpeed = playerBaseSpeed * (Math.random() * 0.1 + 0.9); // AI speed එක player ගේ speed එකට ආසන්නව
+                aiCars.push(aiCar);
+                scene.add(aiCar);
+            }
+
+            // Key controls
+            document.addEventListener('keydown', handleKeyPress);
+
+            // Countdown (3, 2, 1, GO!)
+            countdown();
+        }
+
+        // Car (BMW) එක අනුකරණය කරන function එක
+        function createCar(color) {
+            const car = new THREE.Group();
+            // Body (BMW 3 Series වැනි shape එකක් අනුකරණය)
+            const bodyGeo = new THREE.BoxGeometry(1.5, 0.6, 3);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0;
+            car.add(body);
+            // Roof
+            const roofGeo = new THREE.BoxGeometry(1.3, 0.5, 1.5);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa }); // Silver roof
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 0.55;
+            roof.position.z = -0.2;
+            car.add(roof);
+            // Wheels (4)
+            const wheelGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const wheelFL = new THREE.Mesh(wheelGeo, wheelMat);
+            wheelFL.rotation.z = Math.PI / 2;
+            wheelFL.position.set(-0.75, -0.2, 1);
+            car.add(wheelFL);
+            //... (අනෙක් wheels 3)
+            const wheelFR = wheelFL.clone(); wheelFR.position.x = 0.75; car.add(wheelFR);
+            const wheelRL = wheelFL.clone(); wheelRL.position.z = -1; car.add(wheelRL);
+            const wheelRR = wheelFL.clone(); wheelRR.position.x = 0.75; wheelRR.position.z = -1; car.add(wheelRR);
+            
+            return car;
+        }
+
+        function countdown() {
+            gameMessageEl.style.display = 'block';
+            gameMessageEl.textContent = '3';
+            setTimeout(() => { gameMessageEl.textContent = '2'; }, 1000);
+            setTimeout(() => { gameMessageEl.textContent = '1'; }, 2000);
+            setTimeout(() => { 
+                gameMessageEl.textContent = 'GO!';
+                engineSound.triggerAttack(); // Engine sound on
+                Tone.Transport.start();
+                animate(); // Animate loop එක පටන් ගැනීම
+            }, 3000);
+            setTimeout(() => { gameMessageEl.style.display = 'none'; }, 4000);
+        }
+
+        function handleKeyPress(event) {
+            if (!isGameRunning) return;
+
+            if (event.key === 'ArrowLeft') {
+                if (currentLane > 0) currentLane--;
+            } else if (event.key === 'ArrowRight') {
+                if (currentLane < 2) currentLane++;
+            } else if (event.key === 'ArrowUp') {
+                playerSpeed = playerBaseSpeed * 1.5; // Boost
+            } else if (event.key === 'ArrowDown') {
+                playerSpeed = playerBaseSpeed * 0.5; // Brake
+            }
+        }
+        
+        function handleKeyRelease(event) {
+             if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                 playerSpeed = playerBaseSpeed; // Boost/Brake අත හැරිය විට
+             }
+        }
+        document.addEventListener('keyup', handleKeyRelease);
+
+
+        function animate() {
+            if (!isGameRunning) {
+                renderer.setAnimationLoop(null); // Animation loop එක නතර කිරීම
+                return;
+            }
+            
+            requestAnimationFrame(animate);
+            
+            raceTime += 0.016; // Time (approx)
+
+            // Player's horizontal movement
+            playerCar.position.x += (lanePositions[currentLane] - playerCar.position.x) * 0.1;
+
+            // Player's forward movement
+            playerCar.position.z -= playerSpeed;
+            
+            // Camera එක Player car එක follow කිරීම
+            camera.position.z = playerCar.position.z + 5;
+            camera.position.y = 3;
+            
+            // Engine sound එකේ pitch (ශබ්දය) speed එක අනුව වෙනස් කිරීම
+            engineSound.frequency.value = 100 + (playerSpeed * 500);
+
+            // --- AI Car Logic (Simple) ---
+            aiCars.forEach(aiCar => {
+                // AI car එකේ වේගය
+                aiCar.position.z -= (aiCar.aiSpeed * (1 + (Math.sin(raceTime + aiCar.id * 10) * 0.1))); // AI speed එක මදක් වෙනස් කිරීම
+                
+                // AI car එක lane මාරු කිරීම (simple)
+                if (Math.random() < 0.005) { // ඉඳහිට
+                    aiCar.position.x = lanePositions[Math.floor(Math.random() * 3)];
+                }
+            });
+            
+            // --- Lap & Position Check ---
+            const raceLength = 90; // Track එකේ දිග (Finish line එක 2 වරක්)
+            
+            // Lap check
+            if (playerCar.position.z < -raceLength * (currentLap - 0.5)) {
+                if (currentLap < totalLaps) {
+                    currentLap++;
+                    lapDisplayEl.textContent = `Lap: ${currentLap} / ${totalLaps}`;
+                } else {
+                    // --- RACE FINISHED ---
+                    // Player දිනුවා!
+                    // (අනෙක් cars වල Z position එක check කර Rank එක තීරණය කළ යුතුය)
+                    let rank = 1;
+                    aiCars.forEach(aiCar => {
+                        if (aiCar.position.z < playerCar.position.z) {
+                            rank++; // Player ට වඩා ඉදිරියෙන් සිටින AI car ගණන
+                        }
+                    });
+                    
+                    triggerGameOver(rank); // Rank එක backend එකට යැවීම
+                }
+            }
+            
+            // Position check (සරලව)
+            let currentRank = 1;
+            aiCars.forEach(aiCar => {
+                if (aiCar.position.z < playerCar.position.z) {
+                    currentRank++;
+                }
+            });
+            positionDisplayEl.textContent = `Position: ${currentRank} / 6`;
+
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>
