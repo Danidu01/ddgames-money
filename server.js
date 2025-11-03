@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs'); 
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const path = require('path'); 
+const path = require('path'); // HTML ගොනු serve කිරීමට අනිවාර්යයෙන්ම අවශ්‍යයි
 
 // --- App Setup ---
 const app = express();
@@ -18,7 +18,8 @@ const atlasConnectionString = process.env.atlasConnectionString;
 // --- Middleware ---
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname))); // HTML ගොනු serve කිරීම
+// --- (මෙන්න වැදගත්ම පේළිය) HTML, CSS, JS ගොනු Serve කිරීම ---
+app.use(express.static(path.join(__dirname)));
 
 // --- Database Connection (MongoDB Atlas) ---
 if (!atlasConnectionString) {
@@ -91,7 +92,6 @@ app.post('/api/register', async (req, res) => {
             accountName: accountName,
             password: hashedPassword,
             accountNumber: accountNumber
-            // coins and upgrades will use default values
         });
         await newUser.save();
         res.status(201).json({
@@ -160,9 +160,9 @@ app.get('/api/user-data', protect, async (req, res) => {
         res.status(200).json({
             accountName: user.accountName,
             accountNumber: user.accountNumber,
-            balance: user.balance, // සැබෑ මුදල් (eZ Cash)
-            coins: user.coins, // In-Game Currency
-            upgrades: user.upgrades // Car Upgrades
+            balance: user.balance, 
+            coins: user.coins, 
+            upgrades: user.upgrades 
         });
     } catch (error) {
         res.status(500).json({ message: 'Server error.' });
@@ -170,25 +170,23 @@ app.get('/api/user-data', protect, async (req, res) => {
 });
 
 // --- API Endpoint to BUY COINS (eZ Cash Sim) ---
-// (පැරණි /api/reload එක, "Buy Coins" සඳහා නැවත යොදා ගනී)
 app.post('/api/reload', protect, async (req, res) => {
     try {
-        const { amount } = req.body; // මෙය LKR (සැබෑ මුදල්)
+        const { amount } = req.body; 
         const realMoneyAmount = Number(amount);
         
         if (!realMoneyAmount || realMoneyAmount <= 0) {
             return res.status(400).json({ message: 'Invalid amount.' });
         }
         
-        // LKR 1 = 10 Coins (e.g., LKR 100 = 1000 Coins)
         const coinsToGive = realMoneyAmount * 10; 
 
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
             { 
                 $inc: { 
-                    balance: realMoneyAmount, // සැබෑ මුදල් Balance එක (Withdraw සඳහා)
-                    coins: coinsToGive // In-Game Coins
+                    balance: realMoneyAmount, 
+                    coins: coinsToGive 
                 } 
             },
             { new: true }
@@ -217,12 +215,11 @@ app.post('/api/upgrade-rims', protect, async (req, res) => {
             return res.status(400).json({ message: 'Not enough Coins! Go to Wallet to buy Coins.' });
         }
 
-        // Coins අඩු කර, "Spinner" rims එකතු කිරීම
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
             { 
                 $inc: { coins: -cost },
-                'upgrades.rims': 'Spinner' // Rims update කිරීම
+                'upgrades.rims': 'Spinner' 
             },
             { new: true }
         ).select('-password');
@@ -252,12 +249,11 @@ app.post('/api/upgrade-turbo', protect, async (req, res) => {
             return res.status(400).json({ message: 'Not enough Real Money Balance (LKR 50)! Go to Wallet to Reload.' });
         }
 
-        // LKR 50 (Balance) අඩු කර, "Turbo" එකතු කිරීම
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
             { 
                 $inc: { balance: -cost },
-                'upgrades.hasTurbo': true // Turbo update කිරීම
+                'upgrades.hasTurbo': true 
             },
             { new: true }
         ).select('-password');
@@ -285,7 +281,6 @@ app.post('/api/withdraw', protect, async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        // (අලුත්) Withdraw කරන්නේ In-Game Coins නොව, සැබෑ මුදල් Balance එකයි
         if (user.balance < requiredBalance) {
             return res.status(400).json({ message: `You need at least LKR ${requiredBalance} in your Real Money Balance to withdraw.` });
         }
@@ -295,7 +290,7 @@ app.post('/api/withdraw', protect, async (req, res) => {
 
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
-            { $inc: { balance: -requiredBalance } }, // සැබෑ මුදල් Balance එකෙන් අඩු කිරීම
+            { $inc: { balance: -requiredBalance } }, 
             { new: true }
         ).select('-password');
 
