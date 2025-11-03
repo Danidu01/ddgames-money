@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garage - Car Upgrating</title>
+    <style>
+        /* CSS styles (Car Upgrating Version) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem 0;
+            margin: 0;
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .container {
+            background-color: rgba(30, 30, 30, 0.9);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            width: 90vw;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .container h1 {
+            margin-top: 0;
+            color: #6c757d; /* Grey for Garage */
+        }
+        
+        /* 3D Car Preview */
+        #car-preview {
+            width: 100%;
+            height: 250px;
+            background-color: #000;
+            margin-top: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+        #car-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Stats */
+        .car-stats {
+            text-align: left;
+            margin: 1.5rem 0;
+            background-color: rgba(42, 42, 42, 0.8);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        .car-stats p {
+            font-size: 1.1rem;
+            margin: 0.75rem 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .car-stats strong {
+            color: #007bff;
+            margin-right: 10px;
+        }
+
+        .section-box {
+            background-color: rgba(42, 42, 42, 0.8);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+        }
+        .section-box h3 {
+            margin-top: 0;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 0.5rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .btn-blue { background-color: #007bff; }
+        .btn-blue:hover { background-color: #0069d9; }
+        
+        .btn-green { background-color: #4CAF50; }
+        .btn-green:hover { background-color: #45a049; }
+        
+        .btn-grey { background-color: #6c757d; }
+        .btn-grey:hover { background-color: #5a6268; }
+        
+        .btn-yellow { background-color: #ffc107; color: #121212; }
+        .btn-yellow:hover { background-color: #e0a800; }
+
+        /* Payment Simulation */
+        #payment-simulation {
+            display: none; /* Hide by default */
+            text-align: left;
+            border: 1px solid #ffc107;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        #payment-simulation p { font-size: 0.9rem; }
+        #payment-simulation strong { color: #ffc107; }
+
+        #message, #message-turbo {
+            margin-top: 1rem;
+            font-size: 1rem;
+            font-weight: bold;
+            min-height: 20px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+    </style>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Car Garage</h1>
+        
+        <div id="car-preview">
+            <canvas id="car-canvas"></canvas>
+        </div>
+        
+        <div class="car-stats">
+            <p><strong>Account Name:</strong> <span id="account-name">Loading...</span></p>
+            <p><strong>Real Money (eZ Cash):</strong> LKR <span id="balance">0.00</span></p>
+            <p><strong>In-Game Coins:</strong> 🪙 <span id="coins">0</span></p>
+            <hr style="border-color: #444;">
+            <p><strong>Rims:</strong> <span id="rims-status">Stock</span></p>
+            <p><strong>Turbo:</strong> <span id="turbo-status">Not Installed</span></p>
+        </div>
+
+        <!-- "Normal Modify" (Coins) -->
+        <div class="section-box">
+            <h3>Normal Modify (Coins)</h3>
+            <button id="upgrade-rims-btn" class="btn btn-blue">Install "Spinner" Rims (1000 Coins)</button>
+            <div id="message"></div>
+        </div>
+        
+        <!-- "Loku Upgrade" (eZ Cash) -->
+        <div class="section-box">
+            <h3>Loku Upgrade (eZ Cash)</h3>
+            
+            <!-- Payment Simulation UI (මුලින් සඟවා තබයි) -->
+            <div id="payment-simulation">
+                <h4>Payment Instructions</h4>
+                <p>Please eZ Cash / mCash <strong>LKR 50.00</strong> to:</p>
+                <p style="font-size: 1.2rem; text-align: center;"><strong>0704966651</strong></p>
+                <p>IMPORTANT: Use your Account Number <strong><span id="payment-acc-num">000000</span></strong> as the Reference/Memo.</p>
+                <button id="confirm-payment-btn" class="btn btn-green">I have completed the payment (LKR 50)</button>
+                <button id="cancel-payment-btn" class="btn btn-grey" style="width: auto;">Cancel</button>
+            </div>
+            
+            <button id="upgrade-turbo-btn" class="btn btn-yellow">Install "Turbo" (LKR 50)</button>
+            <div id="message-turbo"></div>
+        </div>
+        
+        <button id="wallet-btn" class="btn btn-grey" style="margin-top: 20px;">Go to Wallet</button>
+
+    </div>
+
+    <script>
+        // --- 1. Global Variables & Auth ---
+        const token = localStorage.getItem('carUserToken');
+        const authHeaders = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        
+        // --- Element Cache ---
+        const balanceEl = document.getElementById('balance');
+        const coinsEl = document.getElementById('coins');
+        const accountNameEl = document.getElementById('account-name');
+        const paymentAccNumEl = document.getElementById('payment-acc-num');
+        const rimsStatusEl = document.getElementById('rims-status');
+        const turboStatusEl = document.getElementById('turbo-status');
+        
+        const messageEl = document.getElementById('message');
+        const messageTurboEl = document.getElementById('message-turbo');
+        
+        const upgradeRimsBtn = document.getElementById('upgrade-rims-btn');
+        const upgradeTurboBtn = document.getElementById('upgrade-turbo-btn');
+        
+        const paymentSimEl = document.getElementById('payment-simulation');
+        const confirmPaymentBtn = document.getElementById('confirm-payment-btn');
+        const cancelPaymentBtn = document.getElementById('cancel-payment-btn');
+        
+        // --- 2. 3D Car Renderer ---
+        let scene, camera, renderer, playerCar;
+        
+        function init3DCar(upgrades) {
+            const canvas = document.getElementById('car-canvas');
+            // (Black Screen Fix) Container එකෙන් size එක ගැනීම
+            const rect = document.getElementById('car-preview').getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111111);
+            
+            camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+            camera.position.set(4, 2, 5);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(width, height); // (Black Screen Fix)
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const spotLight = new THREE.SpotLight(0xffffff, 1, 20, Math.PI / 4, 0.5);
+            spotLight.position.set(5, 5, 5);
+            scene.add(spotLight);
+            
+            playerCar = createCar(0x007bff, upgrades);
+            scene.add(playerCar);
+            
+            animate();
+        }
+        
+        // Car (BMW) එක අනුකරණය කරන function එක
+        function createCar(color, upgrades) {
+            const car = new THREE.Group();
+            const bodyGeo = new THREE.BoxGeometry(1.5, 0.6, 3);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            car.add(body);
+            const roofGeo = new THREE.BoxGeometry(1.3, 0.5, 1.5);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+            const roof = new THREE.Mesh(roofGeo, roofMat);
+            roof.position.y = 0.55; roof.position.z = -0.2;
+            car.add(roof);
+            
+            // (අලුත්) Rims Upgrade පෙන්වීම
+            const wheelColor = (upgrades.rims === 'Spinner') ? 0xffc107 : 0x111111; // Gold or Black
+            const wheelGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: wheelColor });
+            const wheelFL = new THREE.Mesh(wheelGeo, wheelMat);
+            wheelFL.rotation.z = Math.PI / 2;
+            wheelFL.position.set(-0.75, -0.2, 1);
+            car.add(wheelFL);
+            const wheelFR = wheelFL.clone(); wheelFR.position.x = 0.75; car.add(wheelFR);
+            const wheelRL = wheelFL.clone(); wheelRL.position.z = -1; car.add(wheelRL);
+            const wheelRR = wheelFL.clone(); wheelRR.position.x = 0.75; wheelRR.position.z = -1; car.add(wheelRR);
+            
+            // (අලුත්) Turbo Upgrade පෙන්වීම (Spoiler)
+            if (upgrades.hasTurbo) {
+                const spoilerGeo = new THREE.BoxGeometry(1.5, 0.1, 0.3);
+                const spoilerMat = new THREE.MeshStandardMaterial({ color: 0xf44336 }); // Red spoiler
+                const spoiler = new THREE.Mesh(spoilerGeo, spoilerMat);
+                spoiler.position.set(0, 0.5, -1.6);
+                car.add(spoiler);
+            }
+            
+            return car;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (playerCar) {
+                playerCar.rotation.y += 0.01;
+            }
+            // (Black Screen Fix) Renderer එක පවතිනවාදැයි පරීක්ෂා කිරීම
+            if(renderer) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // --- 3. Initial Data Load ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user-data', {
+                    method: 'GET', headers: authHeaders
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    accountNameEl.textContent = data.accountName;
+                    paymentAccNumEl.textContent = data.accountNumber;
+                    
+                    updateUI(data.balance, data.coins, data.upgrades);
+                    
+                    // (Black Screen Fix) 3D Car එක ඇඳීම
+                    // DOM content load වූ පසු, ඊළඟ frame එකේ init කිරීම
+                    requestAnimationFrame(() => {
+                        init3DCar(data.upgrades);
+                    });
+                    
+                } else {
+                    localStorage.removeItem('carUserToken');
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Error loading data.';
+            }
+        });
+        
+        // --- 4. UI Update Function ---
+        function updateUI(balance, coins, upgrades) {
+            balanceEl.textContent = parseFloat(balance).toFixed(2);
+            coinsEl.textContent = coins;
+            
+            // Upgrades පෙන්වීම
+            rimsStatusEl.textContent = upgrades.rims;
+            turboStatusEl.textContent = upgrades.hasTurbo ? 'Installed (Active)' : 'Not Installed';
+
+            // 3D Car එක update කිරීම (Spoiler/Rims එකතු කිරීමට)
+            if (playerCar) {
+                scene.remove(playerCar);
+                playerCar = createCar(0x007bff, upgrades);
+                scene.add(playerCar);
+            }
+            
+            // Upgrade කර ඇත්නම් බොත්තම් disable කිරීම
+            if (upgrades.rims === 'Spinner') {
+                upgradeRimsBtn.disabled = true;
+                upgradeRimsBtn.textContent = 'Rims Already Installed';
+            }
+            if (upgrades.hasTurbo) {
+                upgradeTurboBtn.disabled = true;
+                upgradeTurboBtn.textContent = 'Turbo Already Installed';
+            }
+        }
+        
+        // --- 5. "Upgrade Rims" (Coins) Button ---
+        upgradeRimsBtn.addEventListener('click', async () => {
+            messageEl.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch('/api/upgrade-rims', {
+                    method: 'POST',
+                    headers: authHeaders
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageEl.className = 'success';
+                    messageEl.textContent = data.message;
+                    updateUI(balanceEl.textContent, data.newCoins, data.newUpgrades);
+                } else {
+                    messageEl.className = 'error';
+                    messageEl.textContent = `Error: ${data.message}`;
+                }
+            } catch (error) {
+                messageEl.className = 'error';
+                messageEl.textContent = 'Could not connect to the server.';
+            }
+        });
+
+        // --- 6. "Upgrade Turbo" (eZ Cash) Button -> Show Payment ---
+        upgradeTurboBtn.addEventListener('click', () => {
+            if (parseFloat(balanceEl.textContent) < 50) {
+                messageTurboEl.className = 'error';
+                messageTurboEl.textContent = 'Not enough Real Money Balance (LKR 50)! Please go to Wallet and Buy Coins (Reload).';
+                return;
+            }
+            
+            upgradeTurboBtn.style.display = 'none';
+            paymentSimEl.style.display = 'block';
+            messageTurboEl.textContent = '';
+        });
+        
+        cancelPaymentBtn.addEventListener('click', () => {
+            upgradeTurboBtn.style.display = 'block';
+            paymentSimEl.style.display = 'none';
+        });
+
+        // --- 7. Confirm Payment & Call API ---
+        confirmPaymentBtn.addEventListener('click', async () => {
+            confirmPaymentBtn.disabled = true;
+            confirmPaymentBtn.textContent = 'Processing Upgrade...';
+            
+            try {
+                const response = await fetch('/api/upgrade-turbo', {
+                    method: 'POST',
+                    headers: authHeaders
+                    // body අවශ්‍ය නැත, server එක දන්නවා LKR 50ක් අඩු කළ යුතු බව
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageTurboEl.className = 'success';
+                    messageTurboEl.textContent = data.message;
+                    updateUI(data.newBalance, coinsEl.textContent, data.newUpgrades);
+                } else {
+                    messageTurboEl.className = 'error';
+                    messageTurboEl.textContent = `Error: ${data.message}`;
+                }
+                
+            } catch (error) {
+                messageTurboEl.className = 'error';
+                messageTurboEl.textContent = 'Could not connect to the server.';
+            } finally {
+                upgradeTurboBtn.style.display = 'block';
+                paymentSimEl.style.display = 'none';
+                confirmPaymentBtn.disabled = false;
+                confirmPaymentBtn.textContent = 'I have completed the payment (LKR 50)';
+            }
+        });
+
+        // --- 8. Go to Wallet Button ---
+        document.getElementById('wallet-btn').addEventListener('click', () => {
+            window.location.href = '/wallet.html';
+        });
+    </script>
+</body>
+</html>

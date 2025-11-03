@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game - Car Upgrating</title>
+    <style>
+        /* CSS styles (Car Upgrating Version) */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column; /* (අලුත්) Layout එක වෙනස් කළා */
+            justify-content: flex-start; /* (අලුත්) */
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Scrollbars නැති කිරීමට */
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0P4l4azF5XCuejb9u8t7PPnHfEGItqZNZMA&s');
+            background-size: cover;
+            background-position: center;
+        }
+        .header {
+            width: 100%;
+            background-color: rgba(30, 30, 30, 0.9);
+            padding: 1rem;
+            text-align: center;
+            box-sizing: border-box;
+            border-bottom: 1px solid #444;
+        }
+        .header h1 {
+            margin: 0;
+            color: #007bff;
+            font-size: 1.5rem;
+        }
+        .btn-nav {
+            background-color: #6c757d;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+        .btn-nav:hover { background-color: #5a6268; }
+
+        #game-frame {
+            width: 100%;
+            height: 100%; /* ඉතිරි සම්පූර්ණ ඉඩම */
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>"Madalin Stunt Cars 2" (Playing for Fun)</h1>
+        <button id="wallet-btn" class="btn-nav">Go to Wallet</button>
+    </div>
+
+    <!-- "Need for Speed" වැනි 3D Game එක Embed කිරීම -->
+    <iframe 
+        id="game-frame"
+        src="https://v6p9d9t4.ssl.hwcdn.net/html/5086877/index.html"
+        allowfullscreen="true">
+    </iframe>
+
+    <script>
+        // (අලුත් Token නම) Token එක පරීක්ෂා කිරීම
+        const token = localStorage.getItem('carUserToken');
+        if (!token) {
+            window.location.href = '/login.html'; // Host Fix
+        }
+
+        // Wallet Button
+        document.getElementById('wallet-btn').addEventListener('click', () => {
+            window.location.href = '/wallet.html'; // Host Fix
+        });
+    </script>
+</body>
+</html>
+
